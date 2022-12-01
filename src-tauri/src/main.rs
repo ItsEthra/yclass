@@ -3,6 +3,8 @@
     windows_subsystem = "windows"
 )]
 
+mod process_selector;
+
 use tauri::{CustomMenuItem, Manager, Menu, Submenu, WindowBuilder, WindowUrl};
 
 fn project_submenu() -> Submenu {
@@ -32,7 +34,9 @@ fn main() {
         .add_submenu(process_submenu());
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![
+            process_selector::fetch_all_processes
+        ])
         .setup(|app| {
             WindowBuilder::new(&app.handle(), "main", WindowUrl::App("index.html".into()))
                 .title("YClass")
@@ -50,6 +54,7 @@ fn main() {
                         WindowUrl::App("index.html".into()),
                     )
                     .title("YClass - Attach process")
+                    .inner_size(320., 480.)
                     .build()
                     .unwrap();
                 }
