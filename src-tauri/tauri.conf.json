@@ -52,15 +52,6 @@
     },
     "updater": {
       "active": false
-    },
-    "windows": [
-      {
-        "fullscreen": false,
-        "height": 600,
-        "resizable": true,
-        "title": "YClass",
-        "width": 800
-      }
-    ]
+    }
   }
 }
