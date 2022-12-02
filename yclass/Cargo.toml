@@ -9,4 +9,5 @@ repository = "https://github.com/ItsEthra/yclass"
 
 [dependencies]
 memflex = { path = "../../memflex", features = ["external"] }
+egui-notify = "0.4"
 eframe = "0.19"

@@ -1,16 +1,27 @@
+use crate::state::StateRef;
 use eframe::{
     egui::{Context, RichText, ScrollArea, TextEdit, Window},
     epaint::{vec2, FontId},
 };
 use memflex::external::ProcessIterator;
 
-#[derive(Default)]
 pub struct ProcessAttachWindow {
     shown: bool,
+    poisoned: bool,
     filter: String,
+    state: StateRef,
 }
 
 impl ProcessAttachWindow {
+    pub fn new(state: StateRef) -> Self {
+        Self {
+            poisoned: false,
+            shown: false,
+            filter: "".to_owned(),
+            state,
+        }
+    }
+
     pub fn toggle(&mut self) {
         self.shown = !self.shown;
     }
@@ -31,23 +42,34 @@ impl ProcessAttachWindow {
                         .hint_text("Filter by name")
                         .show(ui);
 
-                    ScrollArea::vertical().show(ui, |ui| {
-                        for pe in ProcessIterator::new().unwrap().filter(|pe| {
-                            self.filter.is_empty()
-                                || pe.name.to_lowercase().contains(&self.filter.to_lowercase())
-                        }) {
-                            #[cfg(unix)]
-                            let text = format!("{} - {}", pe.name, pe.id);
-                            #[cfg(windows)]
-                            let text = format!("{} - 0x{:X}", pe.name, pe.id);
+                    ScrollArea::vertical().show(ui, |ui| match ProcessIterator::new() {
+                        Ok(piter) => {
+                            for pe in piter.filter(|pe| {
+                                self.filter.is_empty()
+                                    || pe.name.to_lowercase().contains(&self.filter.to_lowercase())
+                            }) {
+                                #[cfg(unix)]
+                                let text = format!("{} - {}", pe.name, pe.id);
+                                #[cfg(windows)]
+                                let text = format!("{} - 0x{:X}", pe.name, pe.id);
 
-                            if ui
-                                .button(RichText::new(text).font(FontId::proportional(16.)))
-                                .clicked()
-                            {
-                                attach_pid = Some(pe.id);
+                                if ui
+                                    .button(RichText::new(text).font(FontId::proportional(16.)))
+                                    .clicked()
+                                {
+                                    attach_pid = Some(pe.id);
+                                }
                             }
                         }
+                        Err(e) if self.poisoned => {
+                            _ = self
+                                .state
+                                .toasts
+                                .borrow_mut()
+                                .error(format!("Failed to iterate over processes: {e}"));
+                            self.poisoned = true;
+                        }
+                        _ => {}
                     });
                 });
             });

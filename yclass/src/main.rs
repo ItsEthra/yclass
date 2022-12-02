@@ -1,10 +1,11 @@
 #[cfg(all(not(unix), not(windows)))]
 compile_error!("Only UNIX and Windows platforms are supported");
 
-use eframe::{NativeOptions, Theme};
-
 mod app;
 mod gui;
+mod state;
+
+use eframe::{NativeOptions, Theme};
 
 fn main() {
     eframe::run_native(
@@ -16,7 +17,7 @@ fn main() {
         Box::new(|cc| {
             cc.egui_ctx.set_pixels_per_point(1.5);
 
-            Box::<app::YClassApp>::default()
+            Box::new(app::YClassApp::new(Box::leak(Box::default())))
         }),
     )
 }
