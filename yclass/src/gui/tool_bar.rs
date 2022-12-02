@@ -1,4 +1,3 @@
-use crate::state::StateRef;
 use eframe::{
     egui::{style::Margin, Context, Frame, TopBottomPanel},
     epaint::Rounding,

@@ -2,6 +2,7 @@
 compile_error!("Only UNIX and Windows platforms are supported");
 
 mod app;
+mod class;
 mod gui;
 mod state;
 

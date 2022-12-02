@@ -19,7 +19,7 @@ impl YClassApp {
     pub fn new(state: StateRef) -> Self {
         Self {
             ps_attach_window: ProcessAttachWindow::new(state),
-            class_list: ClassListPanel::default(),
+            class_list: ClassListPanel::new(state),
             tool_bar: ToolBarPanel::default(),
             state,
         }
