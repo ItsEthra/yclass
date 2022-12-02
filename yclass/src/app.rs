@@ -31,9 +31,29 @@ impl App for YClassApp {
         if let Some(ToolBarResponse::ToggleAttachWindow) = self.tool_bar.show(ctx) {
             self.ps_attach_window.toggle();
         }
-
         self.class_list.show(ctx);
-        self.ps_attach_window.show(ctx);
+
+        if let Some(pid) = self.ps_attach_window.show(ctx) {
+            #[cfg(unix)]
+            let proc = memflex::external::find_process_by_id(pid);
+            #[cfg(windows)]
+            let proc = {
+                memflex::external::open_process_by_id(pid);
+            };
+
+            match proc {
+                Ok(p) => *self.state.process.borrow_mut() = Some(p),
+                Err(e) => {
+                    _ = self
+                        .state
+                        .toasts
+                        .borrow_mut()
+                        .error(format!("Failed to attach to the process. {e}"))
+                }
+            }
+
+            self.ps_attach_window.toggle();
+        }
 
         CentralPanel::default().show(ctx, |_ui| {});
 
