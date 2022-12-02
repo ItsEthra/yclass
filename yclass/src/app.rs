@@ -70,7 +70,7 @@ impl App for YClassApp {
 
         let mut style = (*ctx.style()).clone();
         let saved = style.clone();
-        style.visuals.widgets.noninteractive.bg_fill = Color32::from_rgb(0x10, 0x10, 0x10);
+        style.visuals.widgets.noninteractive.bg_fill = Color32::from_rgb(0x12, 0x12, 0x12);
         style.visuals.widgets.noninteractive.fg_stroke.color = Color32::LIGHT_GRAY;
         ctx.set_style(style);
 

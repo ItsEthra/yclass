@@ -3,10 +3,11 @@ use eframe::{
     egui::{Button, Context, ScrollArea, SelectableLabel, SidePanel, TextEdit},
     epaint::vec2,
 };
+use std::mem::take;
 
 pub struct ClassListPanel {
     new_class_buf: String,
-    edit_state: Option<(String, usize)>,
+    edit_state: Option<(String, bool, usize)>,
     state: StateRef,
 }
 
@@ -34,7 +35,11 @@ impl ClassListPanel {
                 ui.set_enabled(state.selected_class.is_some());
 
                 let w = ui.available_width();
-                ui.add_sized(vec2(w, 18.), Button::new("Rename"));
+                if ui.add_sized(vec2(w, 18.), Button::new("Rename")).clicked() {
+                    let i = state.selected_class.unwrap();
+                    self.edit_state = Some((state.class_list[i].name().to_owned(), false, i));
+                }
+
                 if ui.add_sized(vec2(w, 18.), Button::new("Delete")).clicked() {
                     state
                         .class_list
@@ -57,21 +62,51 @@ impl ClassListPanel {
                     state
                         .toasts
                         .error("Class with the same name already exists");
-                } else if self.new_class_buf.starts_with(char::is_numeric)
-                    || self.new_class_buf.contains(char::is_whitespace)
-                {
+                } else if !is_valid_ident(&self.new_class_buf) {
                     state.toasts.error("Not a valid class name");
                 } else {
                     state
                         .class_list
-                        .push(Class::new(std::mem::take(&mut self.new_class_buf)));
+                        .push(Class::new(take(&mut self.new_class_buf)));
                 }
             }
 
             ScrollArea::vertical().show(ui, |ui| {
                 let w = ui.available_width();
-                for (i, class) in state.class_list.iter().enumerate() {
-                    if ui
+
+                for (i, class) in state.class_list.iter_mut().enumerate() {
+                    if let Some((edit_buf, focused)) = self
+                        .edit_state
+                        .as_mut()
+                        .map(|(buf, focused, j)| if *j == i { Some((buf, focused)) } else { None })
+                        .flatten()
+                    {
+                        let r = TextEdit::singleline(edit_buf)
+                            .desired_width(f32::INFINITY)
+                            .hint_text("New name")
+                            .show(ui)
+                            .response;
+
+                        let first_frame = if !*focused {
+                            r.request_focus();
+                            *focused = true;
+                            true
+                        } else {
+                            false
+                        };
+
+                        if r.clicked_elsewhere() && !first_frame {
+                            self.edit_state = None;
+                        } else if r.lost_focus() {
+                            if !is_valid_ident(&*edit_buf) {
+                                state.toasts.error("Not a valid class name");
+                                *focused = false;
+                            } else {
+                                class.set_name(take(edit_buf));
+                                self.edit_state = None;
+                            }
+                        }
+                    } else if ui
                         .add_sized(
                             vec2(w, 18.),
                             SelectableLabel::new(
@@ -91,4 +126,8 @@ impl ClassListPanel {
             });
         });
     }
+}
+
+fn is_valid_ident(name: &str) -> bool {
+    !name.starts_with(char::is_numeric) && !name.contains(char::is_whitespace) && !name.is_empty()
 }
