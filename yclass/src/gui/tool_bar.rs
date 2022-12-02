@@ -1,3 +1,4 @@
+use crate::state::StateRef;
 use eframe::{
     egui::{style::Margin, Context, Frame, TopBottomPanel},
     epaint::Rounding,
@@ -5,10 +6,11 @@ use eframe::{
 
 pub enum ToolBarResponse {
     ToggleAttachWindow,
+    ProcessDetach,
 }
 
 #[derive(Default)]
-pub struct ToolBarPanel {}
+pub struct ToolBarPanel;
 
 impl ToolBarPanel {
     pub fn show(&mut self, ctx: &Context) -> Option<ToolBarResponse> {
@@ -42,7 +44,10 @@ impl ToolBarPanel {
 
                         // Reattach to last process
                         // let _ = ui.button("Reattach to process");
-                        let _ = ui.button("Detach from process");
+                        if ui.button("Detach from process").clicked() {
+                            response = Some(ToolBarResponse::ProcessDetach);
+                            ui.close_menu();
+                        }
                     });
                 });
             });

@@ -27,9 +27,15 @@ impl YClassApp {
 }
 
 impl App for YClassApp {
-    fn update(&mut self, ctx: &Context, _: &mut Frame) {
-        if let Some(ToolBarResponse::ToggleAttachWindow) = self.tool_bar.show(ctx) {
-            self.ps_attach_window.toggle();
+    fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+        match self.tool_bar.show(ctx) {
+            Some(ToolBarResponse::ToggleAttachWindow) => {
+                self.ps_attach_window.toggle();
+            }
+            Some(ToolBarResponse::ProcessDetach) => {
+                frame.set_window_title("YClass");
+            }
+            None => {}
         }
         self.class_list.show(ctx);
 
@@ -38,16 +44,21 @@ impl App for YClassApp {
             let proc = memflex::external::find_process_by_id(pid);
             #[cfg(windows)]
             let proc = {
-                memflex::external::open_process_by_id(pid);
+                memflex::external::open_process_by_id(pid, false);
             };
 
             match proc {
-                Ok(p) => *self.state.process.borrow_mut() = Some(p),
+                Ok(p) => {
+                    frame.set_window_title(&format!("YClass - Attached to {}", p.name()));
+
+                    let state = &mut *self.state.borrow_mut();
+                    state.process = Some(p);
+                }
                 Err(e) => {
                     _ = self
                         .state
-                        .toasts
                         .borrow_mut()
+                        .toasts
                         .error(format!("Failed to attach to the process. {e}"))
                 }
             }
@@ -63,7 +74,7 @@ impl App for YClassApp {
         style.visuals.widgets.noninteractive.fg_stroke.color = Color32::LIGHT_GRAY;
         ctx.set_style(style);
 
-        self.state.toasts.borrow_mut().show(ctx);
+        self.state.borrow_mut().toasts.show(ctx);
         ctx.set_style(saved);
     }
 }

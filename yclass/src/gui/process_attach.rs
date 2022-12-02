@@ -64,8 +64,8 @@ impl ProcessAttachWindow {
                         Err(e) if self.poisoned => {
                             _ = self
                                 .state
-                                .toasts
                                 .borrow_mut()
+                                .toasts
                                 .error(format!("Failed to iterate over processes: {e}"));
                             self.poisoned = true;
                         }
