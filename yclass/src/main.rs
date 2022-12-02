@@ -1,3 +1,6 @@
+#[cfg(all(not(unix), not(windows)))]
+compile_error!("Only UNIX and Windows platforms are supported");
+
 use eframe::{NativeOptions, Theme};
 
 mod app;
