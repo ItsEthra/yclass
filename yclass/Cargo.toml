@@ -12,3 +12,6 @@ memflex = { path = "../../memflex", features = ["external"] }
 yclass_config = { path = "../yclass_config" }
 egui-notify = "0.4"
 eframe = "0.19"
+
+[dev-dependencies]
+fastrand = "1.8"
