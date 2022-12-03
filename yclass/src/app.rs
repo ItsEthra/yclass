@@ -20,7 +20,7 @@ impl YClassApp {
         Self {
             ps_attach_window: ProcessAttachWindow::new(state),
             class_list: ClassListPanel::new(state),
-            tool_bar: ToolBarPanel::default(),
+            tool_bar: ToolBarPanel::new(state),
             state,
         }
     }

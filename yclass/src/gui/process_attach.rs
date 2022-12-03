@@ -36,7 +36,7 @@ impl ProcessAttachWindow {
             .title_bar(false)
             .default_size(vec2(180., 320.))
             .show(ctx, |ui| {
-                ui.vertical_centered(|ui| {
+                ui.vertical_centered_justified(|ui| {
                     TextEdit::singleline(&mut self.filter)
                         .desired_width(f32::INFINITY)
                         .hint_text("Filter by name")

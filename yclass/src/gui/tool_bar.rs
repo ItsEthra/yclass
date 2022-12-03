@@ -1,3 +1,4 @@
+use crate::state::StateRef;
 use eframe::{
     egui::{style::Margin, Context, Frame, TopBottomPanel},
     epaint::Rounding,
@@ -8,10 +9,15 @@ pub enum ToolBarResponse {
     ProcessDetach,
 }
 
-#[derive(Default)]
-pub struct ToolBarPanel;
+pub struct ToolBarPanel {
+    state: StateRef,
+}
 
 impl ToolBarPanel {
+    pub fn new(state: StateRef) -> Self {
+        Self { state }
+    }
+
     pub fn show(&mut self, ctx: &Context) -> Option<ToolBarResponse> {
         let style = ctx.style();
         let frame = Frame {
@@ -48,6 +54,27 @@ impl ToolBarPanel {
                             ui.close_menu();
                         }
                     });
+
+                    ui.add_space(4.);
+                    ui.separator();
+                    ui.add_space(4.);
+
+                    if let Some((proc_name, proc_id)) = self
+                        .state
+                        .borrow()
+                        .process
+                        .as_ref()
+                        .map(|p| (p.name().clone(), p.id()))
+                    {
+                        #[cfg(unix)]
+                        let text = format!("Status: Attached to {} - {}", proc_name, proc_id);
+                        #[cfg(windows)]
+                        let text = format!("Status: Attached to {} - 0x{:X}", proc_name, proc_id);
+
+                        ui.label(text);
+                    } else {
+                        ui.label("Status: Detached");
+                    }
                 });
             });
 
