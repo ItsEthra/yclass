@@ -1,3 +1,4 @@
+use super::ProcessAttachWindow;
 use crate::state::StateRef;
 use eframe::{
     egui::{style::Margin, Context, Frame, TopBottomPanel},
@@ -6,21 +7,31 @@ use eframe::{
 use memflex::external::ProcessIterator;
 
 pub enum ToolBarResponse {
-    ToggleAttachWindow,
     ProcessAttach(u32),
     ProcessDetach,
 }
 
 pub struct ToolBarPanel {
+    ps_attach_window: ProcessAttachWindow,
     state: StateRef,
 }
 
 impl ToolBarPanel {
     pub fn new(state: StateRef) -> Self {
-        Self { state }
+        Self {
+            state,
+            ps_attach_window: ProcessAttachWindow::new(state),
+        }
     }
 
     pub fn show(&mut self, ctx: &Context) -> Option<ToolBarResponse> {
+        let mut response = None;
+
+        if let Some(pid) = self.ps_attach_window.show(ctx) {
+            response = Some(ToolBarResponse::ProcessAttach(pid));
+            self.ps_attach_window.toggle();
+        }
+
         let style = ctx.style();
         let frame = Frame {
             inner_margin: Margin::same(0.),
@@ -30,7 +41,6 @@ impl ToolBarPanel {
             ..Default::default()
         };
 
-        let mut response = None;
         TopBottomPanel::top("_top_bar")
             .frame(frame)
             .show(ctx, |ui| {
@@ -45,7 +55,7 @@ impl ToolBarPanel {
                     });
                     ui.menu_button("Process", |ui| {
                         if ui.button("Attach to process").clicked() {
-                            response = Some(ToolBarResponse::ToggleAttachWindow);
+                            self.ps_attach_window.toggle();
                             ui.close_menu();
                         }
 

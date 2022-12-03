@@ -1,6 +1,7 @@
 #[cfg(all(not(unix), not(windows)))]
 compile_error!("Only UNIX and Windows platforms are supported");
 
+mod address;
 mod app;
 mod class;
 mod gui;
