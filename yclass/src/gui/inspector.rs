@@ -21,11 +21,11 @@ impl InspectorPanel {
     }
 
     pub fn show(&mut self, ctx: &Context) -> Option<()> {
-        let state = &mut *self.state.borrow_mut();
-        let active_class = state.selected_class.map(|i| &state.class_list[i])?;
-
         CentralPanel::default().show(ctx, |ui| {
             ui.scope(|ui| {
+                let state = &mut *self.state.borrow_mut();
+                let active_class = state.selected_class.map(|i| &state.class_list[i])?;
+
                 ui.style_mut().override_font_id = Some(FontId::monospace(18.));
 
                 CollapsingState::load_with_default_open(ctx, Id::new("_inspector_panel"), false)
@@ -50,6 +50,8 @@ impl InspectorPanel {
                         }
                     })
                     .body(|_ui| {});
+
+                Some(())
             });
         });
 
