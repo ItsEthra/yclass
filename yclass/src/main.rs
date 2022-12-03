@@ -7,10 +7,11 @@ mod class;
 mod gui;
 mod state;
 
-use eframe::{NativeOptions, Theme};
-use state::GlobalState;
-use std::cell::RefCell;
-use yclass_config::YClassConfig;
+use eframe::{
+    egui::{FontData, FontDefinitions},
+    epaint::FontFamily,
+    NativeOptions, Theme,
+};
 
 fn main() {
     eframe::run_native(
@@ -22,12 +23,19 @@ fn main() {
         Box::new(|cc| {
             cc.egui_ctx.set_pixels_per_point(1.5);
 
-            Box::new(app::YClassApp::new(Box::leak(Box::new(RefCell::new(
-                GlobalState {
-                    config: YClassConfig::load_or_default(),
-                    ..Default::default()
-                },
-            )))))
+            let mut fonts = FontDefinitions::default();
+            fonts.font_data.insert(
+                "roboto-mono".into(),
+                FontData::from_static(include_bytes!("../../fonts/RobotoMono-Regular.ttf")),
+            );
+            fonts
+                .families
+                .get_mut(&FontFamily::Monospace)
+                .unwrap()
+                .insert(0, "roboto-mono".into());
+            cc.egui_ctx.set_fonts(fonts);
+
+            Box::new(app::YClassApp::new(Box::leak(Box::default())))
         }),
     )
 }

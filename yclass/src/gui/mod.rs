@@ -9,3 +9,7 @@ pub use process_attach::*;
 
 mod inspector;
 pub use inspector::*;
+
+use eframe::epaint::FontId;
+
+const FID_M: FontId = FontId::monospace(18.);

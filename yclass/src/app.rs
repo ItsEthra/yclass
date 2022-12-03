@@ -1,5 +1,5 @@
 use crate::{
-    gui::{ClassListPanel, InspectorPanel, ProcessAttachWindow, ToolBarPanel, ToolBarResponse},
+    gui::{ClassListPanel, InspectorPanel, ToolBarPanel, ToolBarResponse},
     state::StateRef,
 };
 use eframe::{egui::Context, epaint::Color32, App, Frame};

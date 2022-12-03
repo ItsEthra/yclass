@@ -8,5 +8,5 @@
 // TODO(ItsEthra): Parse address (with `nom` crate maybe?) to allow special syntax like adding, dereferencing
 // pointers and getting modules' addresses.
 pub fn parse_address(addr: &str) -> Option<usize> {
-    addr.strip_prefix("0x").unwrap_or(addr).parse().ok()
+    usize::from_str_radix(addr.strip_prefix("0x").unwrap_or(addr), 16).ok()
 }
