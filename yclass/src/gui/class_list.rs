@@ -57,7 +57,7 @@ impl ClassListPanel {
                 if state
                     .class_list
                     .iter()
-                    .any(|c| c.name() == &self.new_class_buf)
+                    .any(|c| c.name() == self.new_class_buf)
                 {
                     state
                         .toasts
@@ -75,11 +75,14 @@ impl ClassListPanel {
                 let w = ui.available_width();
 
                 for (i, class) in state.class_list.iter_mut().enumerate() {
-                    if let Some((edit_buf, focused)) = self
-                        .edit_state
-                        .as_mut()
-                        .map(|(buf, focused, j)| if *j == i { Some((buf, focused)) } else { None })
-                        .flatten()
+                    if let Some((edit_buf, focused)) =
+                        self.edit_state.as_mut().and_then(|(buf, focused, j)| {
+                            if *j == i {
+                                Some((buf, focused))
+                            } else {
+                                None
+                            }
+                        })
                     {
                         let r = TextEdit::singleline(edit_buf)
                             .desired_width(f32::INFINITY)

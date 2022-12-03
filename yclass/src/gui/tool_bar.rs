@@ -104,7 +104,7 @@ impl ToolBarPanel {
                         .borrow()
                         .process
                         .as_ref()
-                        .map(|p| (p.name().clone(), p.id()))
+                        .map(|p| (p.name(), p.id()))
                     {
                         #[cfg(unix)]
                         let text = format!("Status: Attached to {} - {}", proc_name, proc_id);
