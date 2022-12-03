@@ -7,6 +7,7 @@ use eframe::{
     epaint::Color32,
     App, Frame,
 };
+use memflex::external::find_process_by_id;
 
 pub struct YClassApp {
     ps_attach_window: ProcessAttachWindow,
@@ -33,7 +34,17 @@ impl App for YClassApp {
                 self.ps_attach_window.toggle();
             }
             Some(ToolBarResponse::ProcessDetach) => {
+                self.state.borrow_mut().process = None;
                 frame.set_window_title("YClass");
+            }
+            Some(ToolBarResponse::ProcessAttach(pid)) => {
+                let p = find_process_by_id(pid).unwrap();
+                frame.set_window_title(&format!("YClass - Attached to {}", p.name()));
+
+                let state = &mut *self.state.borrow_mut();
+                state.config.last_attached_process_name = Some(p.name());
+                state.config.save();
+                state.process = Some(p);
             }
             None => {}
         }
@@ -52,6 +63,8 @@ impl App for YClassApp {
                     frame.set_window_title(&format!("YClass - Attached to {}", p.name()));
 
                     let state = &mut *self.state.borrow_mut();
+                    state.config.last_attached_process_name = Some(p.name());
+                    state.config.save();
                     state.process = Some(p);
                 }
                 Err(e) => {

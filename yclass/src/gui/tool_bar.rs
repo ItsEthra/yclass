@@ -3,9 +3,11 @@ use eframe::{
     egui::{style::Margin, Context, Frame, TopBottomPanel},
     epaint::Rounding,
 };
+use memflex::external::ProcessIterator;
 
 pub enum ToolBarResponse {
     ToggleAttachWindow,
+    ProcessAttach(u32),
     ProcessDetach,
 }
 
@@ -47,8 +49,36 @@ impl ToolBarPanel {
                             ui.close_menu();
                         }
 
+                        let state = &mut *self.state.borrow_mut();
+
                         // Reattach to last process
-                        // let _ = ui.button("Reattach to process");
+                        if let Some(last_proc_name) =
+                            state.config.last_attached_process_name.as_ref().cloned()
+                        {
+                            if ui.button(format!("Attach to {last_proc_name}")).clicked() {
+                                let last_proc = match ProcessIterator::new() {
+                                    Ok(mut piter) => piter
+                                        .find(|pe| pe.name.eq_ignore_ascii_case(&last_proc_name)),
+                                    Err(e) => {
+                                        state.toasts.error(format!(
+                                            "Failed to iterate over processes. {e}"
+                                        ));
+                                        return;
+                                    }
+                                };
+
+                                if let Some(pe) = last_proc {
+                                    response = Some(ToolBarResponse::ProcessAttach(pe.id));
+                                } else {
+                                    state
+                                        .toasts
+                                        .error(format!("Failed to find {last_proc_name}"));
+                                }
+
+                                ui.close_menu();
+                            }
+                        }
+
                         if ui.button("Detach from process").clicked() {
                             response = Some(ToolBarResponse::ProcessDetach);
                             ui.close_menu();
