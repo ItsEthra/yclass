@@ -9,8 +9,10 @@ repository = "https://github.com/ItsEthra/yclass"
 
 [dependencies]
 memflex = { path = "../../memflex", features = ["external"] }
-yclass_config = { path = "../yclass_config" }
+serde = { version = "1.0", features = ["derive"] }
 egui-notify = "0.4"
 libloading = "0.7"
 fastrand = "1.8"
 eframe = "0.19"
+toml = "0.5"
+dirs = "4.0"

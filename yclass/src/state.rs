@@ -1,7 +1,6 @@
-use crate::{class::ClassList, process::Process};
+use crate::{class::ClassList, config::YClassConfig, process::Process};
 use egui_notify::Toasts;
 use std::cell::RefCell;
-use yclass_config::YClassConfig;
 
 pub type StateRef = &'static RefCell<GlobalState>;
 

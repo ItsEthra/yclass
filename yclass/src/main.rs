@@ -7,6 +7,7 @@ compile_error!("Only X64 targets are supported.");
 mod address;
 mod app;
 mod class;
+mod config;
 mod context;
 mod field;
 mod generator;
