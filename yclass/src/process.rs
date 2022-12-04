@@ -1,3 +1,4 @@
+use crate::config::YClassConfig;
 use libloading::Library;
 use memflex::external::{MemoryRegion, OwnedProcess};
 use std::{error::Error, fs};
@@ -25,9 +26,18 @@ pub enum Process {
 }
 
 impl Process {
-    pub fn attach(pid: u32) -> Result<Self, Box<dyn Error>> {
-        Ok(if fs::metadata("plugin.ycpl").is_ok() {
-            let lib = unsafe { Library::new("plugin.yclp")? };
+    pub fn attach(pid: u32, config: &YClassConfig) -> Result<Self, Box<dyn Error>> {
+        let (path, modified) = (
+            config
+                .plugin_path
+                .clone()
+                .unwrap_or_else(|| "plugin.ycpl".into()),
+            config.plugin_path.is_some(),
+        );
+
+        let metadata = fs::metadata(&path);
+        Ok(if metadata.is_ok() {
+            let lib = unsafe { Library::new(&path)? };
             let attach = unsafe { *lib.get::<fn(u32) -> u32>(b"yc_attach")? };
             let read = unsafe { *lib.get::<fn(usize, *mut u8, usize) -> u32>(b"yc_read")? };
             let detach = unsafe { *lib.get::<fn()>(b"yc_detach")? };
@@ -43,6 +53,8 @@ impl Process {
             (ext.attach)(pid);
 
             Self::Managed(ext)
+        } else if modified {
+            return Err(metadata.unwrap_err().into());
         } else {
             #[cfg(unix)]
             let proc = memflex::external::find_process_by_id(pid)?;

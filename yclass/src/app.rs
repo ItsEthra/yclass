@@ -110,7 +110,7 @@ impl App for YClassApp {
             }
             Some(ToolBarResponse::ProcessAttach(pid)) => {
                 let state = &mut *self.state.borrow_mut();
-                match Process::attach(pid) {
+                match Process::attach(pid, &state.config) {
                     Ok(proc) => {
                         frame.set_window_title(&format!("YClass - Attached to {pid}"));
                         if let Process::Internal((op, _)) = &proc {
@@ -121,9 +121,9 @@ impl App for YClassApp {
                         state.process = Some(proc);
                     }
                     Err(e) => {
-                        state
-                            .toasts
-                            .error(format!("Failed to attach to process: {e}"));
+                        state.toasts.error(format!(
+                            "Failed to attach to process.\nPossibly plugin error.\n{e}"
+                        ));
                     }
                 }
             }
