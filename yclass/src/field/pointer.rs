@@ -2,9 +2,11 @@ use super::{
     create_text_format, display_field_name, display_field_prelude, next_id, Field, FieldId,
     FieldResponse, NamedState,
 };
-use crate::context::InspectionContext;
+use crate::{context::InspectionContext, FID_M};
 use eframe::{
-    egui::{collapsing_header::CollapsingState, popup_below_widget, Id, Key, Label, Sense, Ui},
+    egui::{
+        collapsing_header::CollapsingState, popup_below_widget, Id, Key, Label, RichText, Sense, Ui,
+    },
     epaint::{text::LayoutJob, Color32},
 };
 use std::cell::Cell;
@@ -90,6 +92,15 @@ impl PointerField {
         ctx: &mut InspectionContext,
         address: usize,
     ) -> Option<FieldResponse> {
+        if !ctx.process.can_read(address) {
+            ui.heading(
+                RichText::new("Pointer's body is only allowed at valid addresses")
+                    .color(Color32::RED)
+                    .font(FID_M),
+            );
+            return None;
+        }
+
         let mut response = None;
 
         let cid = self.class_id.get()?;

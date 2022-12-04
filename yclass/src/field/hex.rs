@@ -103,6 +103,24 @@ impl<const N: usize> HexField<N> {
             r.on_hover_text(format!("Full:{displayed}"));
         }
     }
+
+    fn pointer_view(&self, ui: &mut Ui, ctx: &mut InspectionContext, buf: &[u8; N]) {
+        if N != 8 {
+            return;
+        }
+
+        let address = usize::from_ne_bytes(buf[..].try_into().unwrap());
+        if ctx.process.can_read(address) {
+            let mut job = LayoutJob::default();
+            job.append(
+                &format!("-> {address:X}"),
+                4.,
+                create_text_format(ctx.is_selected(self.id), Color32::YELLOW),
+            );
+
+            ui.label(job);
+        }
+    }
 }
 
 impl<const N: usize> Field for HexField<N> {
@@ -129,6 +147,7 @@ impl<const N: usize> Field for HexField<N> {
 
             self.int_view(ui, ctx, &buf);
             self.float_view(ui, ctx, &buf);
+            self.pointer_view(ui, ctx, &buf);
         });
 
         ctx.offset += N;

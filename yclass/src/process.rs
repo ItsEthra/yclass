@@ -1,5 +1,5 @@
 use libloading::Library;
-use memflex::external::OwnedProcess;
+use memflex::external::{MemoryRegion, OwnedProcess};
 use std::{error::Error, fs};
 
 pub struct ManagedExtension {
@@ -20,7 +20,7 @@ impl Drop for ManagedExtension {
 }
 
 pub enum Process {
-    Internal(OwnedProcess),
+    Internal((OwnedProcess, Vec<MemoryRegion>)),
     Managed(ManagedExtension),
 }
 
@@ -59,28 +59,38 @@ impl Process {
                 )?
             };
 
-            Self::Internal(proc)
+            let maps = proc.maps();
+            Self::Internal((proc, maps))
         })
     }
 
     pub fn read(&self, address: usize, buf: &mut [u8]) -> bool {
         match self {
             // TODO(ItsEthra): Proper error handling maybe?.
-            Self::Internal(op) => op.read_buf(address, buf).is_ok(),
+            Self::Internal((op, _)) => op.read_buf(address, buf).is_ok(),
             Self::Managed(ext) => (ext.read)(address, buf.as_mut_ptr(), buf.len()) == 0,
         }
     }
 
     pub fn id(&self) -> u32 {
         match self {
-            Self::Internal(op) => op.id(),
+            Self::Internal((op, _)) => op.id(),
             Self::Managed(ext) => ext.pid,
+        }
+    }
+
+    pub fn can_read(&self, address: usize) -> bool {
+        match self {
+            Self::Internal((_, maps)) => maps
+                .iter()
+                .any(|map| map.from <= address && map.to >= address && map.prot.read()),
+            Self::Managed(_) => unimplemented!(),
         }
     }
 
     pub fn name(&self) -> String {
         match self {
-            Self::Internal(op) => op.name(),
+            Self::Internal((op, _)) => op.name(),
             Self::Managed(_) => "[MANAGED]".into(),
         }
     }
