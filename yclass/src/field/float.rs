@@ -1,8 +1,8 @@
 use super::{
-    create_text_format, display_field_name, display_field_prelude, next_id, Field, FieldId,
-    FieldResponse, NamedState,
+    create_text_format, display_field_name, display_field_prelude, next_id, CodegenData, Field,
+    FieldId, FieldKind, FieldResponse, NamedState,
 };
-use crate::context::InspectionContext;
+use crate::{context::InspectionContext, generator::Generator};
 use eframe::{
     egui::{Label, Sense, Ui},
     epaint::{text::LayoutJob, Color32},
@@ -72,5 +72,17 @@ impl<const N: usize> Field for FloatField<N> {
 
         ctx.offset += N;
         None
+    }
+
+    fn codegen(&self, generator: &mut dyn Generator, _: &CodegenData) {
+        generator.add_field(
+            self.state.name.borrow().as_str(),
+            match N {
+                4 => FieldKind::F32,
+                8 => FieldKind::F64,
+                _ => unreachable!(),
+            },
+            None,
+        );
     }
 }

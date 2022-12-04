@@ -1,8 +1,8 @@
 use super::{
-    create_text_format, display_field_name, display_field_prelude, next_id, Field, FieldId,
-    FieldResponse, NamedState,
+    create_text_format, display_field_name, display_field_prelude, next_id, CodegenData, Field,
+    FieldId, FieldKind, FieldResponse, NamedState,
 };
-use crate::context::InspectionContext;
+use crate::{context::InspectionContext, generator::Generator};
 use eframe::{
     egui::{Label, Sense, Ui},
     epaint::{text::LayoutJob, Color32},
@@ -94,5 +94,23 @@ impl<const N: usize> Field for IntField<N> {
 
         ctx.offset += N;
         None
+    }
+
+    fn codegen(&self, generator: &mut dyn Generator, _: &CodegenData) {
+        generator.add_field(
+            self.state.name.borrow().as_str(),
+            match N {
+                1 if self.signed => FieldKind::I8,
+                1 if !self.signed => FieldKind::U8,
+                2 if self.signed => FieldKind::I16,
+                2 if !self.signed => FieldKind::U16,
+                4 if self.signed => FieldKind::I32,
+                4 if !self.signed => FieldKind::U32,
+                8 if self.signed => FieldKind::I64,
+                8 if !self.signed => FieldKind::U64,
+                _ => unreachable!(),
+            },
+            None,
+        );
     }
 }

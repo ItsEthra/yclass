@@ -9,6 +9,7 @@ mod app;
 mod class;
 mod context;
 mod field;
+mod generator;
 mod gui;
 mod process;
 mod state;

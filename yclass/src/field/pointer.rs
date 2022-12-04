@@ -1,8 +1,8 @@
 use super::{
-    create_text_format, display_field_name, display_field_prelude, next_id, Field, FieldId,
-    FieldResponse, NamedState,
+    create_text_format, display_field_name, display_field_prelude, next_id, CodegenData, Field,
+    FieldId, FieldKind, FieldResponse, NamedState,
 };
-use crate::{context::InspectionContext, FID_M};
+use crate::{context::InspectionContext, generator::Generator, FID_M};
 use eframe::{
     egui::{
         collapsing_header::CollapsingState, popup_below_widget, Id, Key, Label, RichText, Sense, Ui,
@@ -160,7 +160,10 @@ impl Field for PointerField {
         }
 
         let mut state = CollapsingState::load_with_default_open(ui.ctx(), Id::new(uniq_id), false);
-        if ctx.is_selected(self.id) && ui.input().key_pressed(Key::Space) {
+        if ctx.is_selected(self.id)
+            && ui.input().key_pressed(Key::Space)
+            && !self.state.editing.get()
+        {
             state.toggle(ui);
         }
 
@@ -176,5 +179,20 @@ impl Field for PointerField {
 
         ctx.offset += self.size();
         response
+    }
+
+    fn codegen(&self, generator: &mut dyn Generator, data: &CodegenData) {
+        generator.add_field(
+            self.state.name.borrow().as_str(),
+            FieldKind::Ptr,
+            Some(
+                &data
+                    .classes
+                    .iter()
+                    .find(|c| c.id() == self.class_id.get().unwrap())
+                    .unwrap()
+                    .name,
+            ),
+        );
     }
 }

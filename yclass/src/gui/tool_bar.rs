@@ -1,4 +1,4 @@
-use super::ProcessAttachWindow;
+use super::{GeneratorWindow, ProcessAttachWindow};
 use crate::{field::FieldKind, state::StateRef};
 use eframe::{
     egui::{style::Margin, Button, Context, Frame, RichText, TopBottomPanel},
@@ -16,6 +16,7 @@ pub enum ToolBarResponse {
 
 pub struct ToolBarPanel {
     ps_attach_window: ProcessAttachWindow,
+    generator_window: GeneratorWindow,
     state: StateRef,
 }
 
@@ -24,6 +25,7 @@ impl ToolBarPanel {
         Self {
             state,
             ps_attach_window: ProcessAttachWindow::new(state),
+            generator_window: GeneratorWindow::new(state),
         }
     }
 
@@ -34,6 +36,8 @@ impl ToolBarPanel {
             response = Some(ToolBarResponse::ProcessAttach(pid));
             self.ps_attach_window.toggle();
         }
+
+        self.generator_window.show(ctx);
 
         let style = ctx.style();
         let frame = Frame {
@@ -98,6 +102,9 @@ impl ToolBarPanel {
                             ui.close_menu();
                         }
                     });
+                    if ui.button("Generator").clicked() {
+                        self.generator_window.toggle();
+                    }
 
                     ui.add_space(4.);
                     ui.separator();

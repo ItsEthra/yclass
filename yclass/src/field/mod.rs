@@ -13,7 +13,7 @@ pub use float::*;
 mod pointer;
 pub use pointer::*;
 
-use crate::{context::InspectionContext, FID_M};
+use crate::{class::Class, context::InspectionContext, generator::Generator, FID_M};
 use eframe::{
     egui::{TextFormat, Ui},
     epaint::{Color32, Stroke},
@@ -30,6 +30,11 @@ pub trait Field {
     fn size(&self) -> usize;
 
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse>;
+    fn codegen(&self, generator: &mut dyn Generator, data: &CodegenData);
+}
+
+pub struct CodegenData<'a> {
+    pub classes: &'a [Class],
 }
 
 #[derive(Default)]
