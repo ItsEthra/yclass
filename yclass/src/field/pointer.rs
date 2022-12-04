@@ -33,10 +33,10 @@ impl PointerField {
             .map(|id| ctx.class_list.by_id(id))
             .flatten();
 
-        let text = if let Some(cl) = class {
-            format!("[{}]", cl.name)
+        let (text, exists) = if let Some(cl) = class {
+            (format!("[{}]", cl.name), true)
         } else {
-            format!("[C{:X}]", address)
+            (format!("[C{:X}]", address), false)
         };
 
         let mut job = LayoutJob::default();
@@ -64,7 +64,14 @@ impl PointerField {
         job.append(
             &text,
             4.,
-            create_text_format(is_selected, Color32::LIGHT_GRAY),
+            create_text_format(
+                is_selected,
+                if exists {
+                    Color32::LIGHT_GRAY
+                } else {
+                    Color32::DARK_GRAY
+                },
+            ),
         );
 
         let r = ui.add(Label::new(job).sense(Sense::click()));
@@ -104,27 +111,29 @@ impl PointerField {
         let mut response = None;
 
         let cid = self.class_id.get()?;
-        let class = ctx.class_list.by_id(cid)?;
+        if let Some(class) = ctx.class_list.by_id(cid) {
+            let mut inner_ctx = InspectionContext {
+                class_list: ctx.class_list,
+                selection: ctx.selection,
+                current_container: cid,
+                process: ctx.process,
+                toasts: ctx.toasts,
+                offset: 0,
+                address,
+            };
 
-        let mut inner_ctx = InspectionContext {
-            class_list: ctx.class_list,
-            selection: ctx.selection,
-            current_container: cid,
-            process: ctx.process,
-            toasts: ctx.toasts,
-            offset: 0,
-            address,
-        };
-
-        match class
-            .fields
-            .iter()
-            .fold(None, |r, f| r.or(f.draw(ui, &mut inner_ctx)))
-        {
-            Some(other) => response = Some(other),
-            None => {}
+            match class
+                .fields
+                .iter()
+                .fold(None, |r, f| r.or(f.draw(ui, &mut inner_ctx)))
+            {
+                Some(other) => response = Some(other),
+                None => {}
+            }
+            ctx.selection = inner_ctx.selection;
+        } else {
+            response = Some(FieldResponse::NewClass(format!("C{:X}", address), cid));
         }
-        ctx.selection = inner_ctx.selection;
 
         response
     }
@@ -151,18 +160,15 @@ impl Field for PointerField {
         let address = usize::from_ne_bytes(buf);
 
         let uniq_id = ctx.address + ctx.offset + self.id as usize;
-        let sel = self.class_id.get();
-        if sel.is_none() {
-            let new_id = fastrand::usize(..);
-
-            response = Some(FieldResponse::NewClass(format!("C{:X}", address), new_id));
-            self.class_id.set(Some(new_id));
+        if self.class_id.get().is_none() {
+            self.class_id.set(Some(fastrand::usize(..)));
         }
 
         let mut state = CollapsingState::load_with_default_open(ui.ctx(), Id::new(uniq_id), false);
         if ctx.is_selected(self.id)
             && ui.input().key_pressed(Key::Space)
-            && !self.state.editing.get()
+            && !self.state.editing_address.get().is_some()
+        // TODO(ItsEthra): questionable line of code
         {
             state.toggle(ui);
         }

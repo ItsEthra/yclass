@@ -40,8 +40,8 @@ pub struct CodegenData<'a> {
 
 #[derive(Default)]
 pub struct NamedState {
-    editing: Cell<bool>,
-    request_focus: Cell<bool>,
+    editing_address: Cell<Option<usize>>,
+    focused_address: Cell<Option<usize>>,
     name: RefCell<String>,
     saved_name: RefCell<String>,
 }

@@ -32,7 +32,7 @@ fn main() {
             ..Default::default()
         },
         Box::new(|cc| {
-            cc.egui_ctx.set_pixels_per_point(1.5);
+            cc.egui_ctx.set_pixels_per_point(1.25);
 
             let mut fonts = FontDefinitions::default();
             fonts.font_data.insert(

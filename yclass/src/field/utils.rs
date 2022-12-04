@@ -32,7 +32,12 @@ pub fn display_field_name(
     state: &NamedState,
     color: Color32,
 ) {
-    if state.editing.get() {
+    if state
+        .editing_address
+        .get()
+        .map(|e_addr| e_addr == ctx.address + ctx.offset)
+        .unwrap_or_default()
+    {
         let name = &mut *state.name.borrow_mut();
         let w = name
             .chars()
@@ -47,17 +52,22 @@ pub fn display_field_name(
             .show(ui)
             .response;
 
-        if state.request_focus.get() {
+        if state
+            .focused_address
+            .get()
+            .map(|foc_addr| foc_addr == ctx.address + ctx.offset)
+            .unwrap_or_default()
+        {
             r.request_focus();
-            state.request_focus.set(false);
+            state.focused_address.set(None);
         }
 
-        if !r.clicked_elsewhere() && r.lost_focus() {
-            if !is_valid_ident(name) {
-                ctx.toasts.error("Not a valid field name");
-                *name = std::mem::take(&mut *state.saved_name.borrow_mut());
-            }
-            state.editing.set(false);
+        if r.clicked_elsewhere() {
+            *name = std::mem::take(&mut *state.saved_name.borrow_mut());
+            state.editing_address.set(None);
+        } else if r.lost_focus() && !is_valid_ident(name) {
+            ctx.toasts.error("Not a valid field name");
+            state.focused_address.set(Some(ctx.address + ctx.offset));
         }
     } else {
         let mut job = LayoutJob::default();
@@ -70,8 +80,8 @@ pub fn display_field_name(
         let r = ui.add(Label::new(job).sense(Sense::click()));
         if r.secondary_clicked() {
             *state.saved_name.borrow_mut() = state.name.borrow().clone();
-            state.editing.set(true);
-            state.request_focus.set(true);
+            state.editing_address.set(Some(ctx.address + ctx.offset));
+            state.focused_address.set(Some(ctx.address + ctx.offset));
         } else if r.clicked() {
             ctx.select(field.id());
         }

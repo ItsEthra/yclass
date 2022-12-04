@@ -1,6 +1,6 @@
 use crate::{app::is_valid_ident, state::StateRef};
 use eframe::{
-    egui::{Button, Context, ScrollArea, SelectableLabel, SidePanel, TextEdit},
+    egui::{Button, Context, ScrollArea, SidePanel, TextEdit},
     epaint::vec2,
 };
 use std::mem::take;
@@ -74,69 +74,66 @@ impl ClassListPanel {
             }
 
             ScrollArea::vertical().show(ui, |ui| {
-                let w = ui.available_width();
+                ui.vertical_centered_justified(|ui| {
+                    let selected = state.class_list.selected();
+                    let mut new_selection = None;
+                    for class in state.class_list.classes_mut() {
+                        if let Some((edit_buf, focused)) =
+                            self.edit_state.as_mut().and_then(|(buf, focused, j)| {
+                                if *j == class.id() {
+                                    Some((buf, focused))
+                                } else {
+                                    None
+                                }
+                            })
+                        {
+                            let r = TextEdit::singleline(edit_buf)
+                                .desired_width(f32::INFINITY)
+                                .hint_text("New name")
+                                .show(ui)
+                                .response;
 
-                let selected = state.class_list.selected();
-                let mut new_selection = None;
-                for class in state.class_list.classes_mut() {
-                    if let Some((edit_buf, focused)) =
-                        self.edit_state.as_mut().and_then(|(buf, focused, j)| {
-                            if *j == class.id() {
-                                Some((buf, focused))
+                            let first_frame = if !*focused {
+                                r.request_focus();
+                                *focused = true;
+                                true
                             } else {
-                                None
-                            }
-                        })
-                    {
-                        let r = TextEdit::singleline(edit_buf)
-                            .desired_width(f32::INFINITY)
-                            .hint_text("New name")
-                            .show(ui)
-                            .response;
+                                false
+                            };
 
-                        let first_frame = if !*focused {
-                            r.request_focus();
-                            *focused = true;
-                            true
-                        } else {
-                            false
-                        };
-
-                        if r.clicked_elsewhere() && !first_frame {
-                            self.edit_state = None;
-                        } else if r.lost_focus() {
-                            if !is_valid_ident(&*edit_buf) {
-                                state.toasts.error("Not a valid class name");
-                                *focused = false;
-                            } else {
-                                class.name = take(edit_buf);
+                            if r.clicked_elsewhere() && !first_frame {
                                 self.edit_state = None;
+                            } else if r.lost_focus() {
+                                if !is_valid_ident(&*edit_buf) {
+                                    state.toasts.error("Not a valid class name");
+                                    *focused = false;
+                                } else {
+                                    class.name = take(edit_buf);
+                                    self.edit_state = None;
+                                }
                             }
-                        }
-                    } else {
-                        let r = ui.add_sized(
-                            vec2(w, 18.),
-                            SelectableLabel::new(
+                        } else {
+                            let r = ui.selectable_label(
                                 selected.map(|j| class.id() == j).unwrap_or_default(),
                                 &class.name,
-                            ),
-                        );
+                            );
 
-                        if r.secondary_clicked() {
-                            self.edit_state = Some((class.name.clone(), false, class.id()));
-                        } else if r.clicked() {
-                            if selected == Some(class.id()) {
-                                new_selection = Some(None);
-                            } else {
-                                new_selection = Some(Some(class.id()));
+                            if r.secondary_clicked() {
+                                self.edit_state = Some((class.name.clone(), false, class.id()));
+                            } else if r.clicked() {
+                                if selected == Some(class.id()) {
+                                    new_selection = Some(None);
+                                } else {
+                                    new_selection = Some(Some(class.id()));
+                                }
                             }
                         }
                     }
-                }
 
-                if let Some(new) = new_selection {
-                    *state.class_list.selected_mut() = new;
-                }
+                    if let Some(new) = new_selection {
+                        *state.class_list.selected_mut() = new;
+                    }
+                });
             });
         });
     }

@@ -120,7 +120,9 @@ impl<const N: usize> HexField<N> {
                 create_text_format(ctx.is_selected(self.id), Color32::YELLOW),
             );
 
-            ui.label(job);
+            if ui.add(Label::new(job).sense(Sense::click())).clicked() {
+                ctx.select(self.id);
+            }
         }
     }
 }
