@@ -31,9 +31,7 @@ impl<const N: usize> IntField<N> {
         }
     }
 
-    fn show_value(&self, ui: &mut Ui, ctx: &InspectionContext) -> Option<FieldResponse> {
-        let mut response = None;
-
+    fn show_value(&self, ui: &mut Ui, ctx: &mut InspectionContext) {
         let mut buf = [0; N];
         ctx.process.read(ctx.address + ctx.offset, &mut buf[..]);
         let displayed = match N {
@@ -48,15 +46,13 @@ impl<const N: usize> IntField<N> {
         job.append(
             &format!("{displayed}"),
             0.,
-            create_text_format(ctx.selected == Some(self.id), Color32::WHITE),
+            create_text_format(ctx.is_selected(self.id), Color32::WHITE),
         );
 
         let r = ui.add(Label::new(job).sense(Sense::click()));
         if r.clicked() {
-            response = Some(FieldResponse::Selected(self.id));
+            ctx.select(self.id);
         }
-
-        response
     }
 }
 
@@ -70,8 +66,6 @@ impl<const N: usize> Field for IntField<N> {
     }
 
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
-        let mut response = None;
-
         let mut buf = [0; N];
         ctx.process.read(ctx.address + ctx.offset, &mut buf);
 
@@ -80,10 +74,10 @@ impl<const N: usize> Field for IntField<N> {
             display_field_prelude(self, ctx, &mut job);
 
             if ui.add(Label::new(job).sense(Sense::click())).clicked() {
-                response = Some(FieldResponse::Selected(self.id));
+                ctx.select(self.id);
             }
 
-            if let Some(new) = display_field_name(
+            display_field_name(
                 self,
                 ui,
                 ctx,
@@ -93,16 +87,12 @@ impl<const N: usize> Field for IntField<N> {
                 } else {
                     Color32::LIGHT_GREEN
                 },
-            ) {
-                response = Some(new);
-            }
+            );
 
-            if let Some(new) = self.show_value(ui, ctx) {
-                response = Some(new);
-            }
+            self.show_value(ui, ctx);
         });
 
         ctx.offset += N;
-        response
+        None
     }
 }

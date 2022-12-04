@@ -21,9 +21,7 @@ impl<const N: usize> FloatField<N> {
         }
     }
 
-    fn show_value(&self, ui: &mut Ui, ctx: &InspectionContext) -> Option<FieldResponse> {
-        let mut response = None;
-
+    fn show_value(&self, ui: &mut Ui, ctx: &mut InspectionContext) {
         let mut buf = [0; N];
         ctx.process.read(ctx.address + ctx.offset, &mut buf[..]);
         let displayed = match N {
@@ -36,15 +34,13 @@ impl<const N: usize> FloatField<N> {
         job.append(
             &format!("{displayed}"),
             0.,
-            create_text_format(ctx.selected == Some(self.id), Color32::WHITE),
+            create_text_format(ctx.is_selected(self.id), Color32::WHITE),
         );
 
         let r = ui.add(Label::new(job).sense(Sense::click()).wrap(true));
         if r.clicked() {
-            response = Some(FieldResponse::Selected(self.id));
+            ctx.select(self.id);
         }
-
-        response
     }
 }
 
@@ -58,8 +54,6 @@ impl<const N: usize> Field for FloatField<N> {
     }
 
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
-        let mut response = None;
-
         let mut buf = [0; N];
         ctx.process.read(ctx.address + ctx.offset, &mut buf);
 
@@ -68,19 +62,15 @@ impl<const N: usize> Field for FloatField<N> {
             display_field_prelude(self, ctx, &mut job);
 
             if ui.add(Label::new(job).sense(Sense::click())).clicked() {
-                response = Some(FieldResponse::Selected(self.id));
+                ctx.select(self.id);
             }
 
-            if let Some(new) = display_field_name(self, ui, ctx, &self.state, Color32::LIGHT_RED) {
-                response = Some(new);
-            }
+            display_field_name(self, ui, ctx, &self.state, Color32::LIGHT_RED);
 
-            if let Some(new) = self.show_value(ui, ctx) {
-                response = Some(new);
-            }
+            self.show_value(ui, ctx);
         });
 
         ctx.offset += N;
-        response
+        None
     }
 }

@@ -1,4 +1,4 @@
-use super::{Field, FloatField, HexField, IntField};
+use super::{Field, FloatField, HexField, IntField, PointerField};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[rustfmt::skip]
@@ -7,6 +7,7 @@ pub enum FieldKind {
     I8, I16, I32, I64,
     U8, U16, U32, U64,
     F32, F64,
+    Ptr,
 }
 
 impl FieldKind {
@@ -16,7 +17,8 @@ impl FieldKind {
             Self::Unk8 | Self::I8 | Self::U8 => 1,
             Self::Unk16 | Self::I16 | Self::U16 => 2,
             Self::Unk32 | Self::I32 | Self::U32 | Self::F32 => 4,
-            Self::Unk64 | Self::I64 | Self::U64 | Self::F64 => 8,
+            // TODO(ItsEthra): Pointer size is... sigh, different for 32-bit processes
+            Self::Unk64 | Self::I64 | Self::U64 | Self::F64 | Self::Ptr => 8,
         }
     }
 
@@ -36,6 +38,7 @@ impl FieldKind {
             Self::U64 => Box::new(IntField::<8>::unsigned("uint64".into())),
             Self::F32 => Box::new(FloatField::<4>::new("float".into())),
             Self::F64 => Box::new(FloatField::<8>::new("double".into())),
+            Self::Ptr => Box::new(PointerField::new()),
         }
     }
 }

@@ -81,7 +81,7 @@ impl Process {
     pub fn name(&self) -> String {
         match self {
             Self::Internal(op) => op.name(),
-            Self::Managed(_) => unimplemented!(),
+            Self::Managed(_) => "[MANAGED]".into(),
         }
     }
 }

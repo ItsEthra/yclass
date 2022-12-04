@@ -28,18 +28,12 @@ impl<const N: usize> HexField<N> {
             job.append(
                 &format!("{b:02X}"),
                 4. + if i == 0 { 4. } else { 0. },
-                create_text_format(ctx.selected == Some(self.id), color),
+                create_text_format(ctx.is_selected(self.id), color),
             );
         }
     }
 
-    fn int_view(
-        &self,
-        ui: &mut Ui,
-        ctx: &mut InspectionContext,
-        buf: &[u8; N],
-    ) -> Option<FieldResponse> {
-        let mut response = None;
+    fn int_view(&self, ui: &mut Ui, ctx: &mut InspectionContext, buf: &[u8; N]) {
         let mut job = LayoutJob::default();
         let (mut high, mut low) = (0i64, 0i64);
 
@@ -61,32 +55,24 @@ impl<const N: usize> HexField<N> {
         job.append(
             &format!("{}", displayed),
             4.,
-            create_text_format(ctx.selected == Some(self.id), Color32::LIGHT_BLUE),
+            create_text_format(ctx.is_selected(self.id), Color32::LIGHT_BLUE),
         );
 
         let r = ui.add(Label::new(job).sense(Sense::click()));
         if r.clicked() {
-            response = Some(FieldResponse::Selected(self.id));
+            ctx.select(self.id);
         }
 
         if N != 1 {
             r.on_hover_text(format!("High: {high}\nLow: {low}"));
         }
-
-        response
     }
 
-    fn float_view(
-        &self,
-        ui: &mut Ui,
-        ctx: &mut InspectionContext,
-        buf: &[u8; N],
-    ) -> Option<FieldResponse> {
+    fn float_view(&self, ui: &mut Ui, ctx: &mut InspectionContext, buf: &[u8; N]) {
         if N != 4 && N != 8 {
-            return None;
+            return;
         }
 
-        let mut response = None;
         let mut job = LayoutJob::default();
 
         let displayed = if N == 4 {
@@ -98,12 +84,12 @@ impl<const N: usize> HexField<N> {
         job.append(
             &format!("{:e}", displayed),
             4.,
-            create_text_format(ctx.selected == Some(self.id), Color32::LIGHT_RED),
+            create_text_format(ctx.is_selected(self.id), Color32::LIGHT_RED),
         );
 
         let r = ui.add(Label::new(job).sense(Sense::click()));
         if r.clicked() {
-            response = Some(FieldResponse::Selected(self.id));
+            ctx.select(self.id);
         }
 
         if N == 8 {
@@ -116,8 +102,6 @@ impl<const N: usize> HexField<N> {
         } else if N == 4 {
             r.on_hover_text(format!("Full:{displayed}"));
         }
-
-        response
     }
 }
 
@@ -131,8 +115,6 @@ impl<const N: usize> Field for HexField<N> {
     }
 
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
-        let mut response = None;
-
         let mut buf = [0; N];
         ctx.process.read(ctx.address + ctx.offset, &mut buf);
 
@@ -142,20 +124,15 @@ impl<const N: usize> Field for HexField<N> {
             self.byte_view(ctx, &mut job, &buf);
 
             if ui.add(Label::new(job).sense(Sense::click())).clicked() {
-                response = Some(FieldResponse::Selected(self.id));
+                ctx.select(self.id);
             }
 
-            if let Some(new) = self.int_view(ui, ctx, &buf) {
-                response = Some(new);
-            }
-
-            if let Some(new) = self.float_view(ui, ctx, &buf) {
-                response = Some(new);
-            }
+            self.int_view(ui, ctx, &buf);
+            self.float_view(ui, ctx, &buf);
         });
 
         ctx.offset += N;
-        response
+        None
     }
 }
 

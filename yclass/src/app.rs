@@ -1,4 +1,5 @@
 use crate::{
+    context::Selection,
     field::{Field, HexField},
     gui::{ClassListPanel, InspectorPanel, ToolBarPanel, ToolBarResponse},
     process::Process,
@@ -28,20 +29,25 @@ impl App for YClassApp {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
         match self.tool_bar.show(ctx) {
             Some(ToolBarResponse::Add(n)) => {
-                if let Some(cnt_id) = self.inspector.selected_container() {
-                    let state = &mut *self.state.borrow_mut();
-                    let class = state.class_list.by_id_mut(cnt_id).unwrap();
+                let state = &mut *self.state.borrow_mut();
+                if let Some(cid) = self
+                    .inspector
+                    .selection()
+                    .container
+                    .or(state.class_list.selected())
+                {
+                    let class = state.class_list.by_id_mut(cid).unwrap();
                     class.fields.extend(get_filled(n));
                 }
             }
             Some(ToolBarResponse::Remove(n)) => {
-                if let Some((cnt_id, field_id)) = self
-                    .inspector
-                    .selected_container()
-                    .zip(self.inspector.selected_field())
+                if let Selection {
+                    field: Some(field_id),
+                    container: Some(container_id),
+                } = self.inspector.selection()
                 {
                     let state = &mut *self.state.borrow_mut();
-                    let class = state.class_list.by_id_mut(cnt_id).unwrap();
+                    let class = state.class_list.by_id_mut(container_id).unwrap();
 
                     if let Some(pos) = class.fields.iter().position(|f| f.id() == field_id) {
                         class
@@ -49,7 +55,7 @@ impl App for YClassApp {
                             .drain(pos.min(class.fields.len())..(pos + n).min(class.fields.len()));
 
                         if let Some(new_selection) = class.fields.get(pos).map(|f| f.id()) {
-                            self.inspector.set_selected_field(Some(new_selection));
+                            self.inspector.selection_mut().field = Some(new_selection);
                         }
                     } else {
                         unreachable!()
@@ -57,21 +63,22 @@ impl App for YClassApp {
                 }
             }
             Some(ToolBarResponse::ChangeKind(new)) => {
-                if let Some((cnt_id, field_id)) = self
-                    .inspector
-                    .selected_container()
-                    .zip(self.inspector.selected_field())
+                if let Selection {
+                    field: Some(field_id),
+                    container: Some(container_id),
+                } = self.inspector.selection()
                 {
                     let state = &mut *self.state.borrow_mut();
-                    let class = state.class_list.by_id_mut(cnt_id).unwrap();
+                    let class = state.class_list.by_id_mut(container_id).unwrap();
 
                     if let Some(pos) = class.fields.iter().position(|f| f.id() == field_id) {
                         let old_size = class.fields[pos].size();
+                        let replacement = new.into_field();
+
                         if old_size > new.size() {
                             let rest = old_size - new.size();
 
-                            let replacement = new.into_field();
-                            self.inspector.set_selected_field(Some(replacement.id()));
+                            self.inspector.selection_mut().field = Some(replacement.id());
                             class.fields[pos] = replacement;
 
                             let mut fill = get_filled(rest);
@@ -84,8 +91,7 @@ impl App for YClassApp {
                                 stolen += class.fields.remove(pos).size();
                             }
 
-                            let replacement = new.into_field();
-                            self.inspector.set_selected_field(Some(replacement.id()));
+                            self.inspector.selection_mut().field = Some(replacement.id());
                             class.fields.insert(pos, replacement);
 
                             let mut fill = get_filled(stolen - new.size());
@@ -162,4 +168,8 @@ fn get_filled(mut n: usize) -> Vec<Box<dyn Field>> {
     }
 
     fields
+}
+
+pub fn is_valid_ident(name: &str) -> bool {
+    !name.starts_with(char::is_numeric) && !name.contains(char::is_whitespace) && !name.is_empty()
 }

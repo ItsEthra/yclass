@@ -32,8 +32,8 @@ impl ProcessAttachWindow {
         }
 
         let mut attach_pid = None;
-        Window::new("Attach")
-            .title_bar(false)
+        Window::new("Attach to process")
+            .collapsible(false)
             .default_size(vec2(180., 320.))
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {

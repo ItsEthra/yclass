@@ -195,6 +195,11 @@ impl ToolBarPanel {
                     ui.add_space(2.);
 
                     create_change_field_type_group!(ui, response, BLACK, GRAY, Unk8, Unk16, Unk32, Unk64);
+
+                    ui.separator();
+                    ui.add_space(2.);
+
+                    create_change_field_type_group!(ui, response, BLACK, BROWN, Ptr);
                 });
             });
 

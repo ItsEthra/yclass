@@ -1,4 +1,4 @@
-use crate::state::StateRef;
+use crate::{app::is_valid_ident, state::StateRef};
 use eframe::{
     egui::{Button, Context, ScrollArea, SelectableLabel, SidePanel, TextEdit},
     epaint::vec2,
@@ -78,10 +78,10 @@ impl ClassListPanel {
 
                 let selected = state.class_list.selected();
                 let mut new_selection = None;
-                for (i, class) in state.class_list.classes_mut().iter_mut().enumerate() {
+                for class in state.class_list.classes_mut() {
                     if let Some((edit_buf, focused)) =
                         self.edit_state.as_mut().and_then(|(buf, focused, j)| {
-                            if *j == i {
+                            if *j == class.id() {
                                 Some((buf, focused))
                             } else {
                                 None
@@ -113,20 +113,23 @@ impl ClassListPanel {
                                 self.edit_state = None;
                             }
                         }
-                    } else if ui
-                        .add_sized(
+                    } else {
+                        let r = ui.add_sized(
                             vec2(w, 18.),
                             SelectableLabel::new(
-                                selected.map(|j| i == j).unwrap_or_default(),
+                                selected.map(|j| class.id() == j).unwrap_or_default(),
                                 &class.name,
                             ),
-                        )
-                        .clicked()
-                    {
-                        if selected == Some(i) {
-                            new_selection = Some(None);
-                        } else {
-                            new_selection = Some(Some(i));
+                        );
+
+                        if r.secondary_clicked() {
+                            self.edit_state = Some((class.name.clone(), false, class.id()));
+                        } else if r.clicked() {
+                            if selected == Some(class.id()) {
+                                new_selection = Some(None);
+                            } else {
+                                new_selection = Some(Some(class.id()));
+                            }
                         }
                     }
                 }
@@ -137,8 +140,4 @@ impl ClassListPanel {
             });
         });
     }
-}
-
-fn is_valid_ident(name: &str) -> bool {
-    !name.starts_with(char::is_numeric) && !name.contains(char::is_whitespace) && !name.is_empty()
 }

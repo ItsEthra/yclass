@@ -1,7 +1,7 @@
 use crate::{
     address::parse_address,
-    context::InspectionContext,
-    field::{FieldId, FieldResponse},
+    context::{InspectionContext, Selection},
+    field::FieldResponse,
     state::StateRef,
     FID_M,
 };
@@ -11,9 +11,8 @@ use eframe::{
 };
 
 pub struct InspectorPanel {
-    selected_container: Option<usize>,
-    selected: Option<FieldId>,
     address_buffer: String,
+    selection: Selection,
     state: StateRef,
     address: usize,
 }
@@ -28,8 +27,7 @@ impl InspectorPanel {
         Self {
             state,
             address,
-            selected: None,
-            selected_container: None,
+            selection: Selection::default(),
             address_buffer: format!("0x{address:X}"),
         }
     }
@@ -83,30 +81,29 @@ impl InspectorPanel {
         None
     }
 
-    pub fn selected_container(&self) -> Option<usize> {
-        self.selected_container
+    pub fn selection(&self) -> Selection {
+        self.selection
     }
 
-    pub fn selected_field(&self) -> Option<FieldId> {
-        self.selected
-    }
-
-    pub fn set_selected_field(&mut self, id: Option<FieldId>) {
-        self.selected = id;
+    pub fn selection_mut(&mut self) -> &mut Selection {
+        &mut self.selection
     }
 
     fn inspect(&mut self, ui: &mut Ui) -> Option<()> {
-        let state = &*self.state.borrow_mut();
+        let state = &mut *self.state.borrow_mut();
         let mut ctx = InspectionContext {
-            selected_container: self.selected_container.or(state.class_list.selected()),
+            current_container: state.class_list.selected()?,
             process: state.process.as_ref()?,
-            selected: self.selected,
+            class_list: &state.class_list,
+            toasts: &mut state.toasts,
+            selection: self.selection,
             address: self.address,
             offset: 0,
         };
 
         let class = state.class_list.selected_class()?;
 
+        let mut new_class = None;
         #[allow(clippy::single_match)]
         ScrollArea::vertical()
             .auto_shrink([false, false])
@@ -116,13 +113,19 @@ impl InspectorPanel {
                     .iter()
                     .fold(None, |r, f| r.or(f.draw(ui, &mut ctx)))
                 {
-                    Some(FieldResponse::Selected(sid)) => {
-                        self.selected = Some(sid);
+                    Some(FieldResponse::NewClass(name, id)) => {
+                        new_class = Some((name, id));
                     }
                     None => {}
                 }
             });
-        self.selected_container = ctx.selected_container;
+        self.selection = ctx.selection;
+
+        drop(state);
+        let crime = unsafe { &mut *self.state.as_ptr() };
+        if let Some((name, id)) = new_class {
+            crime.class_list.add_class_with_id(name, id);
+        }
 
         Some(())
     }

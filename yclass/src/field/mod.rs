@@ -10,6 +10,8 @@ mod utils;
 pub use utils::*;
 mod float;
 pub use float::*;
+mod pointer;
+pub use pointer::*;
 
 use crate::{context::InspectionContext, FID_M};
 use eframe::{
@@ -20,7 +22,7 @@ use eframe::{
 pub type FieldId = u64;
 
 pub enum FieldResponse {
-    Selected(FieldId),
+    NewClass(String, usize),
 }
 
 pub trait Field {
@@ -35,6 +37,7 @@ pub struct NamedState {
     editing: Cell<bool>,
     request_focus: Cell<bool>,
     name: RefCell<String>,
+    saved_name: RefCell<String>,
 }
 
 impl NamedState {

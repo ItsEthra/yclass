@@ -13,9 +13,13 @@ impl Class {
             id,
             name,
             fields: repeat_with(|| Box::new(HexField::<8>::new()) as Box<dyn Field>)
-                .take(50)
+                .take(20)
                 .collect(),
         }
+    }
+
+    pub fn id(&self) -> usize {
+        self.id
     }
 }
 
@@ -49,12 +53,20 @@ impl ClassList {
         id
     }
 
+    pub fn add_class_with_id(&mut self, name: String, id: usize) {
+        self.classes.push(Class::new(id, name));
+    }
+
     pub fn selected(&self) -> Option<usize> {
         self.selected
     }
 
     pub fn selected_mut(&mut self) -> &mut Option<usize> {
         &mut self.selected
+    }
+
+    pub fn by_id(&self, id: usize) -> Option<&Class> {
+        self.classes.iter().find(|c| c.id == id)
     }
 
     pub fn by_id_mut(&mut self, id: usize) -> Option<&mut Class> {
