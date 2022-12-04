@@ -195,4 +195,8 @@ impl Field for PointerField {
             ),
         );
     }
+
+    fn name(&self) -> Option<String> {
+        Some(self.state.name.borrow().clone())
+    }
 }

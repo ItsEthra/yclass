@@ -73,7 +73,7 @@ impl App for YClassApp {
 
                     if let Some(pos) = class.fields.iter().position(|f| f.id() == field_id) {
                         let old_size = class.fields[pos].size();
-                        let replacement = new.into_field();
+                        let replacement = new.into_field(class.fields[pos].name());
 
                         if old_size > new.size() {
                             let rest = old_size - new.size();

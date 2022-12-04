@@ -27,6 +27,7 @@ pub enum FieldResponse {
 
 pub trait Field {
     fn id(&self) -> FieldId;
+    fn name(&self) -> Option<String>;
     fn size(&self) -> usize;
 
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse>;

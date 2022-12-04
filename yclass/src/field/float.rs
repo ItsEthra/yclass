@@ -85,4 +85,8 @@ impl<const N: usize> Field for FloatField<N> {
             None,
         );
     }
+
+    fn name(&self) -> Option<String> {
+        Some(self.state.name.borrow().clone())
+    }
 }

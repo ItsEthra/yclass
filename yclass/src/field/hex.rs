@@ -159,6 +159,10 @@ impl<const N: usize> Field for HexField<N> {
     fn codegen(&self, generator: &mut dyn Generator, _: &CodegenData) {
         generator.add_offset(self.size());
     }
+
+    fn name(&self) -> Option<String> {
+        None
+    }
 }
 
 fn int_high_low_from_le<const N: usize>(high: &[u8], low: &[u8]) -> (i64, i64) {

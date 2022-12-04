@@ -113,4 +113,8 @@ impl<const N: usize> Field for IntField<N> {
             None,
         );
     }
+
+    fn name(&self) -> Option<String> {
+        Some(self.state.name.borrow().clone())
+    }
 }
