@@ -1,6 +1,5 @@
-use crate::class::Class;
+use crate::{class::Class, process::Process};
 use egui_notify::Toasts;
-use memflex::external::OwnedProcess;
 use std::cell::RefCell;
 use yclass_config::YClassConfig;
 
@@ -8,7 +7,7 @@ pub type StateRef = &'static RefCell<GlobalState>;
 
 pub struct GlobalState {
     pub toasts: Toasts,
-    pub process: Option<OwnedProcess>,
+    pub process: Option<Process>,
     pub class_list: Vec<Class>,
     pub selected_class: Option<usize>,
     pub config: YClassConfig,

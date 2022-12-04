@@ -37,7 +37,7 @@ impl ClassListPanel {
                 let w = ui.available_width();
                 if ui.add_sized(vec2(w, 18.), Button::new("Rename")).clicked() {
                     let i = state.selected_class.unwrap();
-                    self.edit_state = Some((state.class_list[i].name().to_owned(), false, i));
+                    self.edit_state = Some((state.class_list[i].name.clone(), false, i));
                 }
 
                 if ui.add_sized(vec2(w, 18.), Button::new("Delete")).clicked() {
@@ -57,7 +57,7 @@ impl ClassListPanel {
                 if state
                     .class_list
                     .iter()
-                    .any(|c| c.name() == self.new_class_buf)
+                    .any(|c| c.name == self.new_class_buf)
                 {
                     state
                         .toasts
@@ -105,7 +105,7 @@ impl ClassListPanel {
                                 state.toasts.error("Not a valid class name");
                                 *focused = false;
                             } else {
-                                class.set_name(take(edit_buf));
+                                class.name = take(edit_buf);
                                 self.edit_state = None;
                             }
                         }
@@ -114,7 +114,7 @@ impl ClassListPanel {
                             vec2(w, 18.),
                             SelectableLabel::new(
                                 state.selected_class.map(|j| i == j).unwrap_or_default(),
-                                class.name(),
+                                &class.name,
                             ),
                         )
                         .clicked()

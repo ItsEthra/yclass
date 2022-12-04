@@ -4,6 +4,8 @@ use std::{fs, path::PathBuf};
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct YClassConfig {
     pub last_attached_process_name: Option<String>,
+    #[cfg(debug_assertions)]
+    pub last_address: Option<usize>,
 }
 
 impl YClassConfig {

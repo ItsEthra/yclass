@@ -1,14 +1,17 @@
 use super::ProcessAttachWindow;
-use crate::state::StateRef;
+use crate::{field::FieldKind, state::StateRef};
 use eframe::{
-    egui::{style::Margin, Context, Frame, TopBottomPanel},
-    epaint::Rounding,
+    egui::{style::Margin, Button, Context, Frame, RichText, TopBottomPanel},
+    epaint::{vec2, Color32, Rounding},
 };
 use memflex::external::ProcessIterator;
 
 pub enum ToolBarResponse {
     ProcessAttach(u32),
     ProcessDetach,
+    Add(usize),
+    Remove(usize),
+    ChangeKind(FieldKind),
 }
 
 pub struct ToolBarPanel {
@@ -46,6 +49,7 @@ impl ToolBarPanel {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 0.;
+                    ui.visuals_mut().widgets.inactive.rounding = Rounding::none();
 
                     ui.menu_button("Project", |ui| {
                         let _ = ui.button("New project");
@@ -115,6 +119,82 @@ impl ToolBarPanel {
                     } else {
                         ui.label("Status: Detached");
                     }
+
+                    ui.add_space(4.);
+                    ui.separator();
+                    ui.add_space(4.);
+
+                    macro_rules! create_change_field_type_group {
+                        ($ui:ident, $r:ident, $fg:ident, $bg:ident, $($size:ident),*) => {
+                            $(
+                                if $ui
+                                    .add_sized(
+                                        vec2(24., $ui.available_height()),
+                                        Button::new(RichText::new(concat!(stringify!($size))).color(Color32::$fg)).fill(Color32::$bg),
+                                    )
+                                    .clicked()
+                                {
+                                    $r = Some(ToolBarResponse::ChangeKind(FieldKind::$size));
+                                }
+                                $ui.add_space(2.);
+                            )*
+                        };
+                    }
+
+                    macro_rules! create_add_remove_group {
+                        ($ui:ident, $r:ident, $var:ident, $($item:expr),*) => {
+                            $(
+                                if $ui.button(stringify!($item)).clicked() {
+                                    $r = Some(ToolBarResponse::$var($item));
+                                    $ui.close_menu();
+                                }
+                            )*
+                        };
+                    }
+
+                    ui.menu_button("Add", |ui| {
+                        ui.set_width(64.);
+
+                        ui.vertical_centered_justified(|ui| {
+                            create_add_remove_group!(
+                                ui, response, Add,
+                                16, 32, 64, 128,
+                                256, 512, 1024,
+                                2048, 4096
+                            );
+                        });
+                    }).response.on_hover_text("Adds N bytes");
+
+                    ui.menu_button("Remove", |ui| {
+                        ui.set_width(64.);
+
+                        create_add_remove_group!(
+                            ui, response, Remove,
+                            1, 2, 4, 16, 64,
+                            256, 1024
+                        );
+                    }).response.on_hover_text("Removes N fields");
+
+                    ui.add_space(2.);
+                    ui.separator();
+                    ui.add_space(2.);
+
+                    create_change_field_type_group!(ui, response, BLACK, LIGHT_GREEN, U8, U16, U32, U64);
+
+                    ui.separator();
+                    ui.add_space(2.);
+
+                    create_change_field_type_group!(ui, response, BLACK, LIGHT_BLUE, I8, I16, I32, I64);
+
+                    ui.separator();
+                    ui.add_space(2.);
+
+                    create_change_field_type_group!(ui, response, BLACK, LIGHT_RED, F32, F64);
+
+                    ui.separator();
+                    ui.add_space(2.);
+
+                    create_change_field_type_group!(ui, response, BLACK, GRAY, Unk8, Unk16, Unk32, Unk64);
                 });
             });
 

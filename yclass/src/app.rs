@@ -1,9 +1,10 @@
 use crate::{
+    field::{Field, HexField},
     gui::{ClassListPanel, InspectorPanel, ToolBarPanel, ToolBarResponse},
+    process::Process,
     state::StateRef,
 };
 use eframe::{egui::Context, epaint::Color32, App, Frame};
-use memflex::external::find_process_by_id;
 
 pub struct YClassApp {
     class_list: ClassListPanel,
@@ -26,18 +27,87 @@ impl YClassApp {
 impl App for YClassApp {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
         match self.tool_bar.show(ctx) {
+            Some(ToolBarResponse::Add(n)) => {
+                if let Some(cnt) = self.inspector.selected_container() {
+                    let state = &mut *self.state.borrow_mut();
+                    let class = &mut state.class_list[cnt];
+                    class.fields.extend(get_filled(n));
+                }
+            }
+            Some(ToolBarResponse::Remove(n)) => {
+                if let Some((cnt_id, field_id)) = self
+                    .inspector
+                    .selected_container()
+                    .zip(self.inspector.selected_field())
+                {
+                    let state = &mut *self.state.borrow_mut();
+                    let class = &mut state.class_list[cnt_id];
+
+                    if let Some(pos) = class.fields.iter().position(|f| f.id() == field_id) {
+                        class
+                            .fields
+                            .drain(pos.min(class.fields.len())..(pos + n).min(class.fields.len()));
+                    } else {
+                        unreachable!()
+                    }
+                }
+            }
+            Some(ToolBarResponse::ChangeKind(new)) => {
+                if let Some((cnt_id, field_id)) = self
+                    .inspector
+                    .selected_container()
+                    .zip(self.inspector.selected_field())
+                {
+                    let state = &mut *self.state.borrow_mut();
+                    let class = &mut state.class_list[cnt_id];
+
+                    if let Some(pos) = class.fields.iter().position(|f| f.id() == field_id) {
+                        let old_size = class.fields[pos].size();
+                        if old_size > new.size() {
+                            let rest = old_size - new.size();
+
+                            let replacement = new.into_field();
+                            self.inspector.set_selected_field(Some(replacement.id()));
+                            class.fields[pos] = replacement;
+
+                            let mut fill = get_filled(rest);
+                            while let Some(f) = fill.pop() {
+                                class.fields.insert(pos + 1, f);
+                            }
+                        } else {
+                            let mut stolen = 0;
+                            while stolen < new.size() {
+                                stolen += class.fields.remove(pos).size();
+                            }
+
+                            let replacement = new.into_field();
+                            self.inspector.set_selected_field(Some(replacement.id()));
+                            class.fields.insert(pos, replacement);
+
+                            let mut fill = get_filled(stolen - new.size());
+                            while let Some(f) = fill.pop() {
+                                class.fields.insert(pos + 1, f);
+                            }
+                        }
+                    } else {
+                        unreachable!()
+                    }
+                }
+            }
             Some(ToolBarResponse::ProcessDetach) => {
                 self.state.borrow_mut().process = None;
                 frame.set_window_title("YClass");
             }
             Some(ToolBarResponse::ProcessAttach(pid)) => {
                 let state = &mut *self.state.borrow_mut();
-                match find_process_by_id(pid) {
+                match Process::attach(pid) {
                     Ok(proc) => {
-                        frame.set_window_title(&format!("YClass - Attached to {}", proc.name()));
+                        frame.set_window_title(&format!("YClass - Attached to {pid}"));
+                        if let Process::Internal(op) = &proc {
+                            state.config.last_attached_process_name = Some(op.name());
+                            state.config.save();
+                        }
 
-                        state.config.last_attached_process_name = Some(proc.name());
-                        state.config.save();
                         state.process = Some(proc);
                     }
                     Err(e) => {
@@ -62,4 +132,30 @@ impl App for YClassApp {
         self.state.borrow_mut().toasts.show(ctx);
         ctx.set_style(saved);
     }
+}
+
+fn get_filled(mut n: usize) -> Vec<Box<dyn Field>> {
+    let mut fields = vec![];
+
+    while n >= 8 {
+        fields.push(Box::new(HexField::<8>::new()) as _);
+        n -= 8;
+    }
+
+    while n >= 4 {
+        fields.push(Box::new(HexField::<4>::new()) as _);
+        n -= 4;
+    }
+
+    while n >= 2 {
+        fields.push(Box::new(HexField::<2>::new()) as _);
+        n -= 2;
+    }
+
+    while n > 0 {
+        fields.push(Box::new(HexField::<1>::new()) as _);
+        n -= 1;
+    }
+
+    fields
 }

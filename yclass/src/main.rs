@@ -1,17 +1,26 @@
 #[cfg(all(not(unix), not(windows)))]
-compile_error!("Only UNIX and Windows platforms are supported");
+compile_error!("Only UNIX and Windows platforms are supported.");
+
+#[cfg(not(target_pointer_width = "64"))]
+compile_error!("Only X64 targets are supported.");
 
 mod address;
 mod app;
 mod class;
+mod context;
+mod field;
 mod gui;
+mod process;
 mod state;
 
 use eframe::{
     egui::{FontData, FontDefinitions},
-    epaint::FontFamily,
+    epaint::{FontFamily, FontId},
     NativeOptions, Theme,
 };
+
+/// Monospaced font id.
+const FID_M: FontId = FontId::monospace(20.);
 
 fn main() {
     eframe::run_native(

@@ -1,18 +1,18 @@
-#[derive(Debug)]
+use crate::field::{Field, HexField};
+use std::iter::repeat_with;
+
 pub struct Class {
-    name: String,
+    pub name: String,
+    pub fields: Vec<Box<dyn Field>>,
 }
 
 impl Class {
     pub fn new(name: String) -> Self {
-        Self { name }
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn set_name(&mut self, new_name: String) {
-        self.name = new_name;
+        Self {
+            name,
+            fields: repeat_with(|| Box::new(HexField::<8>::new()) as Box<dyn Field>)
+                .take(50)
+                .collect(),
+        }
     }
 }
