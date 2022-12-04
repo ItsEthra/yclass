@@ -6,9 +6,10 @@ description = "Inspect and recreate in-memory data structures"
 license = "MIT"
 authors = ["ItsEthra"]
 repository = "https://github.com/ItsEthra/yclass"
+readme = "README.md"
 
 [dependencies]
-memflex = { path = "../../memflex", features = ["external"] }
+memflex = { git = "https://github.com/ItsEthra/memflex", features = ["external"] }
 serde = { version = "1.0", features = ["derive"] }
 egui-notify = "0.4"
 libloading = "0.7"
