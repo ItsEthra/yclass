@@ -65,9 +65,13 @@ pub fn display_field_name(
         if r.clicked_elsewhere() {
             *name = std::mem::take(&mut *state.saved_name.borrow_mut());
             state.editing_address.set(None);
-        } else if r.lost_focus() && !is_valid_ident(name) {
-            ctx.toasts.error("Not a valid field name");
-            state.focused_address.set(Some(ctx.address + ctx.offset));
+        } else if r.lost_focus() {
+            if !is_valid_ident(name) {
+                ctx.toasts.error("Not a valid field name");
+                state.focused_address.set(Some(ctx.address + ctx.offset));
+            } else {
+                state.editing_address.set(None);
+            }
         }
     } else {
         let mut job = LayoutJob::default();
