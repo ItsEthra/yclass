@@ -1,4 +1,4 @@
-use crate::{class::Class, state::StateRef};
+use crate::state::StateRef;
 use eframe::{
     egui::{Button, Context, ScrollArea, SelectableLabel, SidePanel, TextEdit},
     epaint::vec2,
@@ -32,18 +32,21 @@ impl ClassListPanel {
                 .response;
 
             ui.vertical_centered_justified(|ui| {
-                ui.set_enabled(state.selected_class.is_some());
+                ui.set_enabled(state.class_list.selected().is_some());
 
                 let w = ui.available_width();
                 if ui.add_sized(vec2(w, 18.), Button::new("Rename")).clicked() {
-                    let i = state.selected_class.unwrap();
-                    self.edit_state = Some((state.class_list[i].name.clone(), false, i));
+                    self.edit_state = Some((
+                        state.class_list.selected_class().unwrap().name.clone(),
+                        false,
+                        state.class_list.selected().unwrap(),
+                    ));
                 }
 
                 if ui.add_sized(vec2(w, 18.), Button::new("Delete")).clicked() {
                     state
                         .class_list
-                        .remove(state.selected_class.take().unwrap());
+                        .delete_by_id(state.class_list.selected().unwrap());
                 }
             });
 
@@ -56,6 +59,7 @@ impl ClassListPanel {
             } else if r.lost_focus() && !self.new_class_buf.is_empty() {
                 if state
                     .class_list
+                    .classes()
                     .iter()
                     .any(|c| c.name == self.new_class_buf)
                 {
@@ -65,16 +69,16 @@ impl ClassListPanel {
                 } else if !is_valid_ident(&self.new_class_buf) {
                     state.toasts.error("Not a valid class name");
                 } else {
-                    state
-                        .class_list
-                        .push(Class::new(take(&mut self.new_class_buf)));
+                    state.class_list.add_class(take(&mut self.new_class_buf));
                 }
             }
 
             ScrollArea::vertical().show(ui, |ui| {
                 let w = ui.available_width();
 
-                for (i, class) in state.class_list.iter_mut().enumerate() {
+                let selected = state.class_list.selected();
+                let mut new_selection = None;
+                for (i, class) in state.class_list.classes_mut().iter_mut().enumerate() {
                     if let Some((edit_buf, focused)) =
                         self.edit_state.as_mut().and_then(|(buf, focused, j)| {
                             if *j == i {
@@ -113,18 +117,22 @@ impl ClassListPanel {
                         .add_sized(
                             vec2(w, 18.),
                             SelectableLabel::new(
-                                state.selected_class.map(|j| i == j).unwrap_or_default(),
+                                selected.map(|j| i == j).unwrap_or_default(),
                                 &class.name,
                             ),
                         )
                         .clicked()
                     {
-                        if state.selected_class == Some(i) {
-                            state.selected_class = None;
+                        if selected == Some(i) {
+                            new_selection = Some(None);
                         } else {
-                            state.selected_class = Some(i);
+                            new_selection = Some(Some(i));
                         }
                     }
+                }
+
+                if let Some(new) = new_selection {
+                    *state.class_list.selected_mut() = new;
                 }
             });
         });

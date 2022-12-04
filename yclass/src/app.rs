@@ -28,9 +28,9 @@ impl App for YClassApp {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
         match self.tool_bar.show(ctx) {
             Some(ToolBarResponse::Add(n)) => {
-                if let Some(cnt) = self.inspector.selected_container() {
+                if let Some(cnt_id) = self.inspector.selected_container() {
                     let state = &mut *self.state.borrow_mut();
-                    let class = &mut state.class_list[cnt];
+                    let class = state.class_list.by_id_mut(cnt_id).unwrap();
                     class.fields.extend(get_filled(n));
                 }
             }
@@ -41,12 +41,16 @@ impl App for YClassApp {
                     .zip(self.inspector.selected_field())
                 {
                     let state = &mut *self.state.borrow_mut();
-                    let class = &mut state.class_list[cnt_id];
+                    let class = state.class_list.by_id_mut(cnt_id).unwrap();
 
                     if let Some(pos) = class.fields.iter().position(|f| f.id() == field_id) {
                         class
                             .fields
                             .drain(pos.min(class.fields.len())..(pos + n).min(class.fields.len()));
+
+                        if let Some(new_selection) = class.fields.get(pos).map(|f| f.id()) {
+                            self.inspector.set_selected_field(Some(new_selection));
+                        }
                     } else {
                         unreachable!()
                     }
@@ -59,7 +63,7 @@ impl App for YClassApp {
                     .zip(self.inspector.selected_field())
                 {
                     let state = &mut *self.state.borrow_mut();
-                    let class = &mut state.class_list[cnt_id];
+                    let class = state.class_list.by_id_mut(cnt_id).unwrap();
 
                     if let Some(pos) = class.fields.iter().position(|f| f.id() == field_id) {
                         let old_size = class.fields[pos].size();

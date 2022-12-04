@@ -40,9 +40,7 @@ impl InspectorPanel {
                 ui.style_mut().override_font_id = Some(FontId::monospace(18.));
 
                 let state = self.state.borrow();
-                if state.process.is_none()
-                    || state.selected_class.map(|i| &state.class_list[i]).is_none()
-                {
+                if state.process.is_none() || state.class_list.selected_class().is_none() {
                     return;
                 }
                 drop(state);
@@ -50,7 +48,7 @@ impl InspectorPanel {
                 CollapsingState::load_with_default_open(ctx, Id::new("_inspector_panel"), true)
                     .show_header(ui, |ui| {
                         let state = &mut *self.state.borrow_mut();
-                        let active_class = state.selected_class.map(|i| &state.class_list[i])?;
+                        let active_class = state.class_list.selected_class()?;
 
                         ui.label(format!("{} - ", active_class.name));
 
@@ -100,14 +98,14 @@ impl InspectorPanel {
     fn inspect(&mut self, ui: &mut Ui) -> Option<()> {
         let state = &*self.state.borrow_mut();
         let mut ctx = InspectionContext {
-            selected_container: self.selected_container.or(state.selected_class),
+            selected_container: self.selected_container.or(state.class_list.selected()),
             process: state.process.as_ref()?,
             selected: self.selected,
             address: self.address,
             offset: 0,
         };
 
-        let class = state.selected_class.map(|i| &state.class_list[i])?;
+        let class = state.class_list.selected_class()?;
 
         #[allow(clippy::single_match)]
         ScrollArea::vertical()
