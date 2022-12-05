@@ -11,6 +11,7 @@ pub struct ManagedExtension {
 
     attach: fn(u32) -> u32,
     read: fn(usize, *mut u8, usize) -> u32,
+    can_read: fn(usize) -> bool,
     detach: fn(),
 }
 
@@ -40,6 +41,7 @@ impl Process {
             let lib = unsafe { Library::new(&path)? };
             let attach = unsafe { *lib.get::<fn(u32) -> u32>(b"yc_attach")? };
             let read = unsafe { *lib.get::<fn(usize, *mut u8, usize) -> u32>(b"yc_read")? };
+            let can_read = unsafe { *lib.get::<fn(usize) -> bool>(b"yc_can_read")? };
             let detach = unsafe { *lib.get::<fn()>(b"yc_detach")? };
 
             let ext = ManagedExtension {
@@ -47,6 +49,7 @@ impl Process {
                 lib,
                 attach,
                 read,
+                can_read,
                 detach,
             };
 
@@ -97,7 +100,7 @@ impl Process {
             Self::Internal((_, maps)) => maps
                 .iter()
                 .any(|map| map.from <= address && map.to >= address && map.prot.read()),
-            Self::Managed(_) => unimplemented!(),
+            Self::Managed(ext) => (ext.can_read)(address),
         }
     }
 
