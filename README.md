@@ -32,6 +32,9 @@ cargo r --release
 # Plugin API
 You can write a plugin to change the way `YClass` reads memory.
 To do that you will need a shared library(`.dll` or `.so`) that exports following functions
+specified below. `u32` return value should be treated as status code. If it's `0` then no error is displayed.
+Otherwise return value is displayed in the notification.
+Required functions:
 * `fn yc_attach(process_id: u32) -> u32` - Called when attaching to a process.
 * `fn yc_read(address: usize, buffer: *mut u8, buffer_size: usize) -> u32` - Called(very frequently) when reading memory.
     * `address` is in attached process address space.

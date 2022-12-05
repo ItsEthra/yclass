@@ -1,8 +1,8 @@
 use super::{
-    create_text_format, display_field_name, display_field_prelude, next_id, CodegenData, Field,
+    display_field_name, display_field_prelude, display_field_value, next_id, CodegenData, Field,
     FieldId, FieldKind, FieldResponse, NamedState,
 };
-use crate::{context::InspectionContext, generator::Generator};
+use crate::{context::InspectionContext, generator::Generator, process::Process};
 use eframe::{
     egui::{Label, Sense, Ui},
     epaint::{text::LayoutJob, Color32},
@@ -31,27 +31,28 @@ impl<const N: usize> IntField<N> {
         }
     }
 
-    fn show_value(&self, ui: &mut Ui, ctx: &mut InspectionContext) {
-        let mut buf = [0; N];
-        ctx.process.read(ctx.address + ctx.offset, &mut buf[..]);
-        let displayed = match N {
-            1 => buf[0] as i8 as i64,
-            2 => i16::from_ne_bytes(buf[..].try_into().unwrap()) as i64,
-            4 => i32::from_ne_bytes(buf[..].try_into().unwrap()) as i64,
-            8 => i64::from_ne_bytes(buf[..].try_into().unwrap()),
+    fn write_value(&self, new: &str, address: usize, proc: &Process) -> bool {
+        macro_rules! do_arm {
+            ($buf:ident, $addr:ident, $proc:ident, $new:ident, $type:ty) => {
+                if let Ok(val) = $new.parse::<$type>() {
+                    $proc.write($addr, &val.to_ne_bytes());
+                    true
+                } else {
+                    false
+                }
+            };
+        }
+
+        match N {
+            1 if self.signed => do_arm!(buf, address, proc, new, i8),
+            1 if !self.signed => do_arm!(buf, address, proc, new, u8),
+            2 if self.signed => do_arm!(buf, address, proc, new, i16),
+            2 if !self.signed => do_arm!(buf, address, proc, new, u16),
+            4 if self.signed => do_arm!(buf, address, proc, new, i32),
+            4 if !self.signed => do_arm!(buf, address, proc, new, u32),
+            8 if self.signed => do_arm!(buf, address, proc, new, i64),
+            8 if !self.signed => do_arm!(buf, address, proc, new, u64),
             _ => unreachable!(),
-        };
-
-        let mut job = LayoutJob::default();
-        job.append(
-            &format!("{displayed}"),
-            0.,
-            create_text_format(ctx.is_selected(self.id), Color32::WHITE),
-        );
-
-        let r = ui.add(Label::new(job).sense(Sense::click()));
-        if r.clicked() {
-            ctx.select(self.id);
         }
     }
 }
@@ -67,6 +68,7 @@ impl<const N: usize> Field for IntField<N> {
 
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
         let mut buf = [0; N];
+        let address = ctx.address + ctx.offset;
         ctx.process.read(ctx.address + ctx.offset, &mut buf);
 
         ui.horizontal(|ui| {
@@ -88,8 +90,24 @@ impl<const N: usize> Field for IntField<N> {
                     Color32::LIGHT_GREEN
                 },
             );
-
-            self.show_value(ui, ctx);
+            display_field_value(
+                self,
+                ui,
+                ctx,
+                &self.state,
+                || match N {
+                    1 if self.signed => buf[0] as i8 as i64,
+                    1 if !self.signed => buf[0] as u8 as i64,
+                    2 if self.signed => i16::from_ne_bytes(buf[..].try_into().unwrap()) as i64,
+                    2 if !self.signed => u16::from_ne_bytes(buf[..].try_into().unwrap()) as i64,
+                    4 if self.signed => i32::from_ne_bytes(buf[..].try_into().unwrap()) as i64,
+                    4 if !self.signed => u32::from_ne_bytes(buf[..].try_into().unwrap()) as i64,
+                    8 if self.signed => i64::from_ne_bytes(buf[..].try_into().unwrap()),
+                    8 if !self.signed => u64::from_ne_bytes(buf[..].try_into().unwrap()) as i64,
+                    _ => unreachable!(),
+                },
+                |new| self.write_value(new, address, ctx.process),
+            );
         });
 
         ctx.offset += N;

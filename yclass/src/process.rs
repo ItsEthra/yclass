@@ -83,20 +83,20 @@ impl Process {
         })
     }
 
-    pub fn read(&self, address: usize, buf: &mut [u8]) -> bool {
+    pub fn read(&self, address: usize, buf: &mut [u8]) {
         match self {
             // TODO(ItsEthra): Proper error handling maybe?.
-            Self::Internal((op, _)) => op.read_buf(address, buf).is_ok(),
-            Self::Managed(ext) => (ext.read)(address, buf.as_mut_ptr(), buf.len()) == 0,
-        }
+            Self::Internal((op, _)) => _ = op.read_buf(address, buf),
+            Self::Managed(ext) => _ = (ext.read)(address, buf.as_mut_ptr(), buf.len()),
+        };
     }
 
-    pub fn write(&self, address: usize, buf: &[u8]) -> bool {
+    pub fn write(&self, address: usize, buf: &[u8]) {
         match self {
             // TODO(ItsEthra): Proper error handling maybe?.
-            Self::Internal((op, _)) => op.write_buf(address, buf).is_ok(),
-            Self::Managed(ext) => (ext.write)(address, buf.as_ptr(), buf.len()) == 0,
-        }
+            Self::Internal((op, _)) => _ = op.write_buf(address, buf),
+            Self::Managed(ext) => _ = (ext.write)(address, buf.as_ptr(), buf.len()),
+        };
     }
 
     pub fn id(&self) -> u32 {

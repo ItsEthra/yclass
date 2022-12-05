@@ -1,6 +1,6 @@
 use super::{
-    display_field_name, display_field_prelude, next_id, CodegenData, Field,
-    FieldId, FieldKind, FieldResponse, NamedState, display_field_value,
+    display_field_name, display_field_prelude, display_field_value, next_id, CodegenData, Field,
+    FieldId, FieldKind, FieldResponse, NamedState,
 };
 use crate::{context::InspectionContext, generator::Generator};
 use eframe::{
@@ -45,27 +45,36 @@ impl<const N: usize> Field for FloatField<N> {
             }
 
             display_field_name(self, ui, ctx, &self.state, Color32::LIGHT_RED);
-            display_field_value(self, ui, ctx, &self.state, || match N {
-                4 => f32::from_ne_bytes(buf[..].try_into().unwrap()) as f64,
-                8 => f64::from_ne_bytes(buf[..].try_into().unwrap()),
-                _ => unreachable!(),
-            }, |new| {
-                match N {
-                    4 => if let Ok(val) = new.parse::<f32>() {
-                        ctx.process.write(address, &val.to_ne_bytes());
-                        true
-                    } else {
-                        false
+            display_field_value(
+                self,
+                ui,
+                ctx,
+                &self.state,
+                || match N {
+                    4 => f32::from_ne_bytes(buf[..].try_into().unwrap()) as f64,
+                    8 => f64::from_ne_bytes(buf[..].try_into().unwrap()),
+                    _ => unreachable!(),
+                },
+                |new| match N {
+                    4 => {
+                        if let Ok(val) = new.parse::<f32>() {
+                            ctx.process.write(address, &val.to_ne_bytes());
+                            true
+                        } else {
+                            false
+                        }
                     }
-                    8 => if let Ok(val) = new.parse::<f64>() {
-                        ctx.process.write(address, &val.to_ne_bytes());
-                        true
-                    } else {
-                        false
+                    8 => {
+                        if let Ok(val) = new.parse::<f64>() {
+                            ctx.process.write(address, &val.to_ne_bytes());
+                            true
+                        } else {
+                            false
+                        }
                     }
                     _ => false,
-                }
-            });
+                },
+            );
         });
 
         ctx.offset += N;
