@@ -156,6 +156,8 @@ impl ToolBarPanel {
                     state.toasts.error("Project file is in invalid formst");
                 }
             }
+
+            ui.close_menu();
         }
 
         let save_as = |state: &mut GlobalState| {
@@ -191,10 +193,14 @@ impl ToolBarPanel {
             } else {
                 state.last_opened_project = save_as(state);
             }
+
+            ui.close_menu();
         }
 
         if ui.button("Save project as").clicked() {
             state.last_opened_project = save_as(state);
+
+            ui.close_menu();
         }
     }
 

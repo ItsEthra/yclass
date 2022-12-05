@@ -91,10 +91,14 @@ impl ProjectData {
     pub fn load(self) -> ClassList {
         let mut list = ClassList::EMPTY;
 
+        self.classes
+            .iter()
+            .for_each(|cl| _ = list.add_empty_class(cl.name.to_string()));
+
         self.classes.into_iter().for_each(|mut class| {
             class.fields.sort_by_key(|f| f.offset);
 
-            let cid = list.add_empty_class(class.name);
+            let cid = list.by_name(&class.name).unwrap().id();
             let mut current_offset = 0;
 
             for DataField {
