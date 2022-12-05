@@ -3,18 +3,46 @@ use super::{
 };
 use crate::{context::InspectionContext, generator::Generator};
 use eframe::{
-    egui::{Label, Sense, Ui},
+    egui::{Label, ScrollArea, Sense, Ui},
     epaint::{text::LayoutJob, Color32},
 };
-use std::ops::RangeFrom;
+use std::{
+    cell::RefCell,
+    iter::repeat_with,
+    ops::{Range, RangeFrom},
+};
+
+struct PreviewState {
+    address: usize,
+    hover_time: f32,
+    shown: bool,
+    children: Vec<Box<dyn Field>>,
+}
+
+impl PreviewState {
+    fn new(address: usize) -> Self {
+        Self {
+            address,
+            hover_time: 0.,
+            shown: false,
+            children: repeat_with(|| Box::new(HexField::<8>::new()) as Box<dyn Field>)
+                .take(20)
+                .collect(),
+        }
+    }
+}
 
 pub struct HexField<const N: usize> {
+    preview_state: RefCell<Option<PreviewState>>,
     id: FieldId,
 }
 
 impl<const N: usize> HexField<N> {
     pub fn new() -> Self {
-        Self { id: next_id() }
+        Self {
+            id: next_id(),
+            preview_state: None.into(),
+        }
     }
 
     fn byte_view(&self, ctx: &mut InspectionContext, job: &mut LayoutJob, buf: &[u8; N]) {
@@ -120,8 +148,69 @@ impl<const N: usize> HexField<N> {
                 create_text_format(ctx.is_selected(self.id), Color32::YELLOW),
             );
 
-            if ui.add(Label::new(job).sense(Sense::click())).clicked() {
+            let r = ui.add(Label::new(job).sense(Sense::click()));
+
+            if r.clicked() {
                 ctx.select(self.id);
+            }
+
+            let preview_state = &mut *self.preview_state.borrow_mut();
+            if r.hovered() {
+                if let Some(preview) = preview_state {
+                    if preview.address == ctx.address + ctx.offset {
+                        if !preview.shown {
+                            ui.ctx().request_repaint();
+                            preview.hover_time += ui.input().stable_dt;
+                            preview.shown = preview.hover_time >= 0.3;
+                        } else {
+                            let yd = ui.input().scroll_delta.y;
+                            if yd < 0. {
+                                preview
+                                    .children
+                                    .push(Box::new(HexField::<8>::new()) as Box<dyn Field>);
+                            } else if yd > 0. {
+                                preview.children.pop();
+                            }
+
+                            r.on_hover_ui(|ui| {
+                                let saved = (ctx.address, ctx.offset);
+                                ctx.address = address;
+                                ctx.offset = 0;
+
+                                ScrollArea::vertical().stick_to_bottom(true).show_rows(
+                                    ui,
+                                    20.,
+                                    preview.children.len(),
+                                    |ui, Range { start, end }| {
+                                        let (start, end) = (start.min(end), start.max(end));
+
+                                        ctx.offset += preview
+                                            .children
+                                            .iter()
+                                            .take(start)
+                                            .map(|c| c.size())
+                                            .sum::<usize>();
+
+                                        preview
+                                            .children
+                                            .iter()
+                                            .skip(start)
+                                            .take(end - start)
+                                            .for_each(|child| _ = child.draw(ui, ctx));
+                                    },
+                                );
+
+                                (ctx.address, ctx.offset) = saved;
+                            });
+                        }
+                    }
+                } else {
+                    *preview_state = Some(PreviewState::new(ctx.address + ctx.offset));
+                }
+            } else if let Some(preview) = preview_state {
+                if preview.address == ctx.address + ctx.offset {
+                    *preview_state = None;
+                }
             }
         }
     }
