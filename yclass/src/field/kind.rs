@@ -1,4 +1,4 @@
-use super::{Field, FloatField, HexField, IntField, PointerField};
+use super::{BoolField, Field, FloatField, HexField, IntField, PointerField};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[rustfmt::skip]
@@ -8,13 +8,14 @@ pub enum FieldKind {
     U8, U16, U32, U64,
     F32, F64,
     Ptr,
+    Bool,
 }
 
 impl FieldKind {
     /// Returns size in bytes.
     pub fn size(&self) -> usize {
         match self {
-            Self::Unk8 | Self::I8 | Self::U8 => 1,
+            Self::Unk8 | Self::I8 | Self::U8 | Self::Bool => 1,
             Self::Unk16 | Self::I16 | Self::U16 => 2,
             Self::Unk32 | Self::I32 | Self::U32 | Self::F32 => 4,
             // TODO(ItsEthra): Pointer size is... sigh, different for 32-bit processes
@@ -54,7 +55,8 @@ impl FieldKind {
             Self::F64 => Box::new(FloatField::<8>::new(
                 name.unwrap_or_else(|| "double".into()),
             )),
-            Self::Ptr => Box::new(PointerField::new()),
+            Self::Bool => Box::new(BoolField::new(name.unwrap_or_else(|| "boolean".into()))),
+            Self::Ptr => Box::new(PointerField::new(name.unwrap_or_else(|| "pointer".into()))),
         }
     }
 }

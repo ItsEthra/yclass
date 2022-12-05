@@ -1,6 +1,4 @@
 mod hex;
-use std::cell::{Cell, RefCell};
-
 pub use hex::*;
 mod int;
 pub use int::*;
@@ -12,12 +10,15 @@ mod float;
 pub use float::*;
 mod pointer;
 pub use pointer::*;
+mod boolean;
+pub use boolean::*;
 
 use crate::{class::Class, context::InspectionContext, generator::Generator, FID_M};
 use eframe::{
     egui::{TextFormat, Ui},
     epaint::{Color32, Stroke},
 };
+use std::cell::{Cell, RefCell};
 
 pub type FieldId = u64;
 

@@ -186,6 +186,11 @@ impl ToolBarPanel {
                     ui.separator();
                     ui.add_space(2.);
 
+                    create_change_field_type_group!(ui, response, BLACK, GOLD, Bool);
+
+                    ui.separator();
+                    ui.add_space(2.);
+
                     create_change_field_type_group!(ui, response, BLACK, LIGHT_GREEN, U8, U16, U32, U64);
 
                     ui.separator();

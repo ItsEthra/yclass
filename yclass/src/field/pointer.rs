@@ -18,10 +18,10 @@ pub struct PointerField {
 }
 
 impl PointerField {
-    pub fn new() -> Self {
+    pub fn new(name: String) -> Self {
         Self {
             id: next_id(),
-            state: NamedState::new("pointer".into()),
+            state: NamedState::new(name),
             class_id: None.into(),
         }
     }
