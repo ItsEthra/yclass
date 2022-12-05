@@ -139,27 +139,6 @@ impl ToolBarPanel {
     fn project_menu(&mut self, ui: &mut Ui) {
         let state = &mut *self.state.borrow_mut();
 
-        let _ = ui.button("New project");
-        if ui.button("Open project").clicked() {
-            if let Some(text) = rfd::FileDialog::new()
-                .set_title("Open YClass project")
-                .add_filter("YClass project file", &["yclass"])
-                .pick_file()
-                .and_then(|path| fs::read_to_string(path).ok())
-            {
-                if let Some(pd) = ProjectData::from_str(&text) {
-                    // TODO(ItsEthra): Add option to save the current project.
-
-                    let class_list = pd.load();
-                    state.class_list = class_list;
-                } else {
-                    state.toasts.error("Project file is in invalid formst");
-                }
-            }
-
-            ui.close_menu();
-        }
-
         let save_as = |state: &mut GlobalState| {
             if let Some(path) = rfd::FileDialog::new()
                 .set_title("Save YClass project")
@@ -179,6 +158,35 @@ impl ToolBarPanel {
                 None
             }
         };
+
+        let _ = ui.button("New project");
+        if ui.button("Open project").clicked() {
+            if !state.class_list.classes().is_empty() {
+                if let Some(ref last) = state.last_opened_project {
+                    let text = ProjectData::store(state.class_list.classes()).to_string();
+                    _ = fs::write(&last, text.as_bytes());
+                } else {
+                    save_as(state);
+                }
+            }
+
+            if let Some((text, path)) = rfd::FileDialog::new()
+                .set_title("Open YClass project")
+                .add_filter("YClass project file", &["yclass"])
+                .pick_file()
+                .map(|path| (fs::read_to_string(&path).ok(), path))
+            {
+                if let Some(pd) = text.map(|text| ProjectData::from_str(&text)).flatten() {
+                    let class_list = pd.load();
+                    state.class_list = class_list;
+                    state.last_opened_project = Some(path);
+                } else {
+                    state.toasts.error("Project file is in invalid formst");
+                }
+            }
+
+            ui.close_menu();
+        }
 
         if ui.button("Save project").clicked() {
             if let Some(ref path) = state.last_opened_project {
