@@ -1,4 +1,4 @@
-use super::{create_text_format, Field, NamedState};
+use super::{create_text_format, Field, HexField, NamedState};
 use crate::{app::is_valid_ident, context::InspectionContext, FID_M};
 use eframe::{
     egui::{FontSelection, Label, Sense, TextEdit, Ui},
@@ -90,4 +90,30 @@ pub fn display_field_name(
             ctx.select(field.id());
         }
     }
+}
+
+pub fn allocate_padding(mut n: usize) -> Vec<Box<dyn Field>> {
+    let mut fields = vec![];
+
+    while n >= 8 {
+        fields.push(Box::new(HexField::<8>::new()) as _);
+        n -= 8;
+    }
+
+    while n >= 4 {
+        fields.push(Box::new(HexField::<4>::new()) as _);
+        n -= 4;
+    }
+
+    while n >= 2 {
+        fields.push(Box::new(HexField::<2>::new()) as _);
+        n -= 2;
+    }
+
+    while n > 0 {
+        fields.push(Box::new(HexField::<1>::new()) as _);
+        n -= 1;
+    }
+
+    fields
 }

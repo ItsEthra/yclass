@@ -10,9 +10,21 @@ cd yclass
 cargo r --release
 ```
 
+# Features
+* Preserving fields' offsets when other fields are replaced.
+* Different variable types:
+    * `I8`, `I16`, `I32`, `I64`
+    * `U8`, `U16`, `U32`, `U64`
+    * `F32`, `F64`
+    * `Pointer`
+    * `Bool`
+* Generating Rust/C++ code out of classes.
+* Saving/Opening project files.
+* Plugin API to customize reading behavior.
+
 # Planned features
 * [ ] - Writing values.
-* [ ] - Save/Open project files.
+* [x] - Save/Open project files.
 * [ ] - Pointer preview on hover with unknown fields.
 * [ ] - Disassembly of function pointers.
 

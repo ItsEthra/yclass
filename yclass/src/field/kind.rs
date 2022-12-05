@@ -1,6 +1,7 @@
 use super::{BoolField, Field, FloatField, HexField, IntField, PointerField};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[rustfmt::skip]
 pub enum FieldKind {
     Unk8, Unk16, Unk32, Unk64,
