@@ -1,5 +1,4 @@
 use std::slice;
-
 use super::{
     create_text_format, display_field_name, display_field_prelude, next_id, CodegenData, Field,
     FieldId, FieldKind, FieldResponse, NamedState,

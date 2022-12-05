@@ -15,6 +15,7 @@ pub struct InspectorPanel {
     selection: Selection,
     state: StateRef,
     address: usize,
+    allow_scroll: bool,
 }
 
 impl InspectorPanel {
@@ -27,6 +28,7 @@ impl InspectorPanel {
         Self {
             state,
             address,
+            allow_scroll: true,
             selection: Selection::default(),
             address_buffer: format!("0x{address:X}"),
         }
@@ -107,6 +109,7 @@ impl InspectorPanel {
         #[allow(clippy::single_match)]
         ScrollArea::vertical()
             .auto_shrink([false, false])
+            .enable_scrolling(self.allow_scroll)
             .show(ui, |ui| {
                 match class
                     .fields
@@ -116,6 +119,8 @@ impl InspectorPanel {
                     Some(FieldResponse::NewClass(name, id)) => {
                         new_class = Some((name, id));
                     }
+                    Some(FieldResponse::LockScroll) => self.allow_scroll = false,
+                    Some(FieldResponse::UnlockScroll) => self.allow_scroll = true,
                     None => {}
                 }
             });

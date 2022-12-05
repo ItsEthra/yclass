@@ -24,6 +24,8 @@ pub type FieldId = u64;
 
 pub enum FieldResponse {
     NewClass(String, usize),
+    LockScroll,
+    UnlockScroll,
 }
 
 pub trait Field {

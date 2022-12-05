@@ -134,7 +134,7 @@ impl<const N: usize> HexField<N> {
         }
     }
 
-    fn pointer_view(&self, ui: &mut Ui, ctx: &mut InspectionContext, buf: &[u8; N]) {
+    fn pointer_view(&self, ui: &mut Ui, ctx: &mut InspectionContext, buf: &[u8; N], response: &mut Option<FieldResponse>) {
         if N != 8 {
             return;
         }
@@ -161,7 +161,10 @@ impl<const N: usize> HexField<N> {
                         if !preview.shown {
                             ui.ctx().request_repaint();
                             preview.hover_time += ui.input().stable_dt;
-                            preview.shown = preview.hover_time >= 0.3;
+                            if preview.hover_time >= 0.3 {
+                                preview.shown = true;
+                                *response = Some(FieldResponse::LockScroll);
+                            }
                         } else {
                             let yd = ui.input().scroll_delta.y;
                             if yd < 0. {
@@ -210,6 +213,7 @@ impl<const N: usize> HexField<N> {
             } else if let Some(preview) = preview_state {
                 if preview.address == ctx.address + ctx.offset {
                     *preview_state = None;
+                    *response = Some(FieldResponse::UnlockScroll);
                 }
             }
         }
@@ -229,6 +233,8 @@ impl<const N: usize> Field for HexField<N> {
         let mut buf = [0; N];
         ctx.process.read(ctx.address + ctx.offset, &mut buf);
 
+        let mut response = None;
+
         ui.horizontal(|ui| {
             let mut job = LayoutJob::default();
             display_field_prelude(self, ctx, &mut job);
@@ -240,11 +246,11 @@ impl<const N: usize> Field for HexField<N> {
 
             self.int_view(ui, ctx, &buf);
             self.float_view(ui, ctx, &buf);
-            self.pointer_view(ui, ctx, &buf);
+            self.pointer_view(ui, ctx, &buf, &mut response);
         });
 
         ctx.offset += N;
-        None
+        response
     }
 
     fn codegen(&self, generator: &mut dyn Generator, _: &CodegenData) {
