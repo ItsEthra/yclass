@@ -18,12 +18,14 @@ mod process;
 mod project;
 mod state;
 
+use config::YClassConfig;
 use eframe::{
     egui::{FontData, FontDefinitions},
     epaint::{FontFamily, FontId},
     NativeOptions, Theme,
 };
-use std::time::Duration;
+use state::GlobalState;
+use std::{time::Duration, cell::RefCell};
 
 /// Monospaced font id.
 const FID_M: FontId = FontId::monospace(20.);
@@ -36,7 +38,8 @@ fn main() {
             ..Default::default()
         },
         Box::new(|cc| {
-            cc.egui_ctx.set_pixels_per_point(1.25);
+            let config = YClassConfig::load_or_default();
+            cc.egui_ctx.set_pixels_per_point(config.dpi.unwrap_or(1.));
 
             let mut fonts = FontDefinitions::default();
             fonts.font_data.insert(
@@ -52,7 +55,10 @@ fn main() {
             cc.egui_ctx
                 .request_repaint_after(Duration::from_millis(100));
 
-            Box::new(app::YClassApp::new(Box::leak(Box::default())))
+            Box::new(app::YClassApp::new(Box::leak(Box::new(RefCell::new(GlobalState {
+                config,
+                ..Default::default()
+            })))))
         }),
     )
 }

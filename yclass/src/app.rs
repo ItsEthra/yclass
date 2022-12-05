@@ -1,3 +1,5 @@
+use std::sync::Once;
+
 use crate::{
     context::Selection,
     field::allocate_padding,
@@ -27,6 +29,12 @@ impl YClassApp {
 
 impl App for YClassApp {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+        static DPI_INIT: Once = Once::new();
+        DPI_INIT.call_once(|| {
+            let dpi = self.state.borrow().config.dpi.unwrap_or(1.);
+            ctx.set_pixels_per_point(dpi);
+        });
+
         match self.tool_bar.show(ctx) {
             Some(ToolBarResponse::Add(n)) => {
                 let state = &mut *self.state.borrow_mut();

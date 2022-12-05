@@ -8,6 +8,7 @@ pub struct YClassConfig {
     pub last_address: Option<usize>,
 
     pub plugin_path: Option<PathBuf>,
+    pub dpi: Option<f32>,
 }
 
 impl YClassConfig {
