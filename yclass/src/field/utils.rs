@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::{create_text_format, EditingState, Field, HexField, NamedState};
 use crate::{app::is_valid_ident, context::InspectionContext, FID_M};
 use eframe::{
@@ -25,12 +27,12 @@ pub fn display_field_prelude(field: &dyn Field, ctx: &mut InspectionContext, job
     );
 }
 
-pub fn display_field_value(
+pub fn display_field_value<T: Display>(
     field: &dyn Field,
     ui: &mut Ui,
     ctx: &mut InspectionContext,
     state: &NamedState,
-    displayed_value: impl FnOnce() -> String,
+    displayed_value: impl FnOnce() -> T,
     write_new_value: impl FnOnce(&str) -> bool,
 ) {
     let editing_value = &mut *state.editing_state.borrow_mut();
@@ -73,7 +75,7 @@ pub fn display_field_value(
     }
 
     let mut job = LayoutJob::default();
-    let displyed = displayed_value();
+    let displyed = displayed_value().to_string();
     job.append(
         &displyed,
         0.,
@@ -83,6 +85,8 @@ pub fn display_field_value(
     let r = ui.add(Label::new(job).sense(Sense::click()));
     if r.secondary_clicked() {
         *editing_value = Some(EditingState::new(ctx.address + ctx.offset, displyed));
+    } else if r.clicked() {
+        ctx.select(field.id());
     }
 }
 

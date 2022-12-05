@@ -1,6 +1,6 @@
 use super::{
-    create_text_format, display_field_name, display_field_prelude, next_id, CodegenData, Field,
-    FieldId, FieldKind, FieldResponse, NamedState,
+    display_field_name, display_field_prelude, next_id, CodegenData, Field,
+    FieldId, FieldKind, FieldResponse, NamedState, display_field_value,
 };
 use crate::{context::InspectionContext, generator::Generator};
 use eframe::{
@@ -20,28 +20,6 @@ impl<const N: usize> FloatField<N> {
             state: NamedState::new(name),
         }
     }
-
-    fn show_value(&self, ui: &mut Ui, ctx: &mut InspectionContext) {
-        let mut buf = [0; N];
-        ctx.process.read(ctx.address + ctx.offset, &mut buf[..]);
-        let displayed = match N {
-            4 => f32::from_ne_bytes(buf[..].try_into().unwrap()) as f64,
-            8 => f64::from_ne_bytes(buf[..].try_into().unwrap()),
-            _ => unreachable!(),
-        };
-
-        let mut job = LayoutJob::default();
-        job.append(
-            &format!("{displayed}"),
-            0.,
-            create_text_format(ctx.is_selected(self.id), Color32::WHITE),
-        );
-
-        let r = ui.add(Label::new(job).sense(Sense::click()).wrap(true));
-        if r.clicked() {
-            ctx.select(self.id);
-        }
-    }
 }
 
 impl<const N: usize> Field for FloatField<N> {
@@ -55,7 +33,8 @@ impl<const N: usize> Field for FloatField<N> {
 
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
         let mut buf = [0; N];
-        ctx.process.read(ctx.address + ctx.offset, &mut buf);
+        let address = ctx.address + ctx.offset;
+        ctx.process.read(address, &mut buf);
 
         ui.horizontal(|ui| {
             let mut job = LayoutJob::default();
@@ -66,8 +45,27 @@ impl<const N: usize> Field for FloatField<N> {
             }
 
             display_field_name(self, ui, ctx, &self.state, Color32::LIGHT_RED);
-
-            self.show_value(ui, ctx);
+            display_field_value(self, ui, ctx, &self.state, || match N {
+                4 => f32::from_ne_bytes(buf[..].try_into().unwrap()) as f64,
+                8 => f64::from_ne_bytes(buf[..].try_into().unwrap()),
+                _ => unreachable!(),
+            }, |new| {
+                match N {
+                    4 => if let Ok(val) = new.parse::<f32>() {
+                        ctx.process.write(address, &val.to_ne_bytes());
+                        true
+                    } else {
+                        false
+                    }
+                    8 => if let Ok(val) = new.parse::<f64>() {
+                        ctx.process.write(address, &val.to_ne_bytes());
+                        true
+                    } else {
+                        false
+                    }
+                    _ => false,
+                }
+            });
         });
 
         ctx.offset += N;
