@@ -99,6 +99,7 @@ impl App for YClassApp {
                                 class.fields.insert(pos + 1, f);
                             }
                         }
+                        state.dummy = false;
                     } else {
                         unreachable!()
                     }

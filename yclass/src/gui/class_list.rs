@@ -74,6 +74,7 @@ impl ClassListPanel {
                     state.toasts.error("Not a valid class name");
                 } else {
                     state.class_list.add_class(take(&mut self.new_class_buf));
+                    state.dummy = false;
                 }
             }
 
@@ -114,6 +115,7 @@ impl ClassListPanel {
                                 } else {
                                     class.name = take(edit_buf);
                                     self.edit_state = None;
+                                    state.dummy = false;
                                 }
                             }
                         } else {

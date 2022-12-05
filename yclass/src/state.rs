@@ -14,6 +14,9 @@ pub struct GlobalState {
     pub class_list: ClassList,
     pub config: YClassConfig,
     pub last_opened_project: Option<PathBuf>,
+    /// `true` means project was just created and contains no useful
+    /// information
+    pub dummy: bool
 }
 
 impl Default for GlobalState {
@@ -22,6 +25,7 @@ impl Default for GlobalState {
             toasts: Toasts::default(),
             last_opened_project: None,
             process: None,
+            dummy: true,
             class_list: ClassList::default(),
             config: YClassConfig::load_or_default(),
         }
@@ -47,6 +51,7 @@ impl GlobalState {
                     .error(format!("Failed to save the project. {e}"));
             } else {
                 self.last_opened_project = Some(path.to_owned());
+                self.dummy = false;
             }
         } else if let Some(ref last) = self.last_opened_project {
             let pd = ProjectData::store(self.class_list.classes()).to_string();
@@ -55,6 +60,7 @@ impl GlobalState {
                     .error(format!("Failed to save the project. {e}"));
             } else {
                 self.last_opened_project = Some(last.to_owned());
+                self.dummy = false;
             }
         } else if let Some(path) = rfd::FileDialog::new()
             .set_title("Save current project")
@@ -66,7 +72,7 @@ impl GlobalState {
     }
 
     pub fn open_project(&mut self) {
-        if !self.class_list.classes().is_empty() {
+        if !self.class_list.classes().is_empty() && !dbg!(self.dummy) {
             self.save_project(None);
         }
 
@@ -79,6 +85,7 @@ impl GlobalState {
                 Ok(data) => {
                     if let Some(pd) = ProjectData::from_str(&data) {
                         self.class_list = pd.load();
+                        self.dummy = false;
                         self.last_opened_project = Some(path);
                     } else {
                         self.toasts.error("Project file is in invalid format");

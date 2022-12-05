@@ -1,4 +1,4 @@
-#![cfg_attr(windows, windows_subsystem = "windows")]
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
 #[cfg(all(not(unix), not(windows)))]
 compile_error!("Only UNIX and Windows platforms are supported.");
