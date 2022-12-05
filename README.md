@@ -21,11 +21,12 @@ cargo r --release
 * Generating Rust/C++ code out of classes.
 * Saving/Opening project files.
 * Plugin API to customize reading behavior.
+* Preview of the memory pointer is pointing to.
 
 # Planned features
 * [ ] - Writing values.
 * [x] - Save/Open project files.
-* [ ] - Pointer preview on hover with unknown fields.
+* [x] - Pointer preview on hover with unknown fields.
 * [ ] - Disassembly of function pointers.
 
 # Plugin API
