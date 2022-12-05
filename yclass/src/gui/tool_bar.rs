@@ -1,15 +1,10 @@
 use super::{GeneratorWindow, ProcessAttachWindow};
-use crate::{
-    field::FieldKind,
-    project::ProjectData,
-    state::{GlobalState, StateRef},
-};
+use crate::{class::ClassList, field::FieldKind, state::StateRef};
 use eframe::{
     egui::{style::Margin, Button, Context, Frame, RichText, TopBottomPanel, Ui},
     epaint::{vec2, Color32, Rounding},
 };
 use memflex::external::ProcessIterator;
-use std::fs;
 
 macro_rules! create_change_field_type_group {
     ($ui:ident, $r:ident, $fg:ident, $bg:ident, $($size:ident),*) => {
@@ -139,75 +134,24 @@ impl ToolBarPanel {
     fn project_menu(&mut self, ui: &mut Ui) {
         let state = &mut *self.state.borrow_mut();
 
-        let save_as = |state: &mut GlobalState| {
-            if let Some(path) = rfd::FileDialog::new()
-                .set_title("Save YClass project")
-                .add_filter("YClass project file", &["yclass"])
-                .save_file()
-            {
-                let pd = ProjectData::store(state.class_list.classes());
-                if let Err(e) = fs::write(&path, pd.to_string().as_bytes()) {
-                    state
-                        .toasts
-                        .error(format!("Failed to save the project. {e}"));
-                    None
-                } else {
-                    Some(path)
-                }
-            } else {
-                None
-            }
-        };
+        if ui.button("New project").clicked() {
+            state.save_project(None);
+            state.class_list = ClassList::default();
+            ui.close_menu();
+        }
 
-        let _ = ui.button("New project");
         if ui.button("Open project").clicked() {
-            if !state.class_list.classes().is_empty() {
-                if let Some(ref last) = state.last_opened_project {
-                    let text = ProjectData::store(state.class_list.classes()).to_string();
-                    _ = fs::write(&last, text.as_bytes());
-                } else {
-                    save_as(state);
-                }
-            }
-
-            if let Some((text, path)) = rfd::FileDialog::new()
-                .set_title("Open YClass project")
-                .add_filter("YClass project file", &["yclass"])
-                .pick_file()
-                .map(|path| (fs::read_to_string(&path).ok(), path))
-            {
-                if let Some(pd) = text.map(|text| ProjectData::from_str(&text)).flatten() {
-                    let class_list = pd.load();
-                    state.class_list = class_list;
-                    state.last_opened_project = Some(path);
-                } else {
-                    state.toasts.error("Project file is in invalid formst");
-                }
-            }
-
+            state.open_project();
             ui.close_menu();
         }
 
         if ui.button("Save project").clicked() {
-            if let Some(ref path) = state.last_opened_project {
-                let pd = ProjectData::store(state.class_list.classes());
-                if let Err(e) = fs::write(&path, pd.to_string().as_bytes()) {
-                    state
-                        .toasts
-                        .error(format!("Failed to save the project. {e}"));
-                } else {
-                    state.toasts.success("Project saved");
-                }
-            } else {
-                state.last_opened_project = save_as(state);
-            }
-
+            state.save_project(None);
             ui.close_menu();
         }
 
         if ui.button("Save project as").clicked() {
-            state.last_opened_project = save_as(state);
-
+            state.save_project_as();
             ui.close_menu();
         }
     }

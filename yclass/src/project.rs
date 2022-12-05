@@ -95,10 +95,10 @@ impl ProjectData {
             .iter()
             .for_each(|cl| _ = list.add_empty_class(cl.name.to_string()));
 
-        self.classes.into_iter().for_each(|mut class| {
-            class.fields.sort_by_key(|f| f.offset);
+        self.classes.into_iter().for_each(|mut dataclass| {
+            dataclass.fields.sort_by_key(|f| f.offset);
 
-            let cid = list.by_name(&class.name).unwrap().id();
+            let cid = list.by_name(&dataclass.name).unwrap().id();
             let mut current_offset = 0;
 
             for DataField {
@@ -106,10 +106,9 @@ impl ProjectData {
                 name,
                 kind,
                 metadata,
-            } in class.fields
+            } in dataclass.fields
             {
                 let class = list.by_id_mut(cid).unwrap();
-
                 if field_offset > current_offset {
                     class
                         .fields
@@ -139,6 +138,13 @@ impl ProjectData {
                 }
 
                 current_offset = field_offset + kind.size();
+            }
+
+            if current_offset % 8 != 0 {
+                list.by_id_mut(cid)
+                    .unwrap()
+                    .fields
+                    .extend(allocate_padding(8 - (current_offset % 8)));
             }
         });
 

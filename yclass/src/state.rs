@@ -1,6 +1,10 @@
-use crate::{class::ClassList, config::YClassConfig, process::Process};
+use crate::{class::ClassList, config::YClassConfig, process::Process, project::ProjectData};
 use egui_notify::Toasts;
-use std::{cell::RefCell, path::PathBuf};
+use std::{
+    cell::RefCell,
+    fs,
+    path::{Path, PathBuf},
+};
 
 pub type StateRef = &'static RefCell<GlobalState>;
 
@@ -20,6 +24,72 @@ impl Default for GlobalState {
             process: None,
             class_list: ClassList::default(),
             config: YClassConfig::load_or_default(),
+        }
+    }
+}
+
+impl GlobalState {
+    pub fn save_project_as(&mut self) {
+        if let Some(path) = rfd::FileDialog::new()
+            .set_title("Save current project")
+            .add_filter("YClass project", &["yclass"])
+            .save_file()
+        {
+            self.save_project(Some(&path));
+        }
+    }
+
+    pub fn save_project(&mut self, path: Option<&Path>) {
+        if let Some(path) = path {
+            let pd = ProjectData::store(self.class_list.classes()).to_string();
+            if let Err(e) = fs::write(path, pd.as_bytes()) {
+                self.toasts
+                    .error(format!("Failed to save the project. {e}"));
+            } else {
+                self.last_opened_project = Some(path.to_owned());
+            }
+        } else if let Some(ref last) = self.last_opened_project {
+            let pd = ProjectData::store(self.class_list.classes()).to_string();
+            if let Err(e) = fs::write(last, pd.as_bytes()) {
+                self.toasts
+                    .error(format!("Failed to save the project. {e}"));
+            } else {
+                self.last_opened_project = Some(last.to_owned());
+            }
+        } else if let Some(path) = rfd::FileDialog::new()
+            .set_title("Save current project")
+            .add_filter("YClass project", &["yclass"])
+            .save_file()
+        {
+            self.save_project(Some(&path));
+        }
+    }
+
+    pub fn open_project(&mut self) {
+        if !self.class_list.classes().is_empty() {
+            self.save_project(None);
+        }
+
+        if let Some(path) = rfd::FileDialog::new()
+            .set_title("Open existing project")
+            .add_filter("YClass project", &["yclass"])
+            .pick_file()
+        {
+            match fs::read_to_string(&path) {
+                Ok(data) => {
+                    if let Some(pd) = ProjectData::from_str(&data) {
+                        self.class_list = pd.load();
+                        self.last_opened_project = Some(path);
+                    } else {
+                        self.toasts.error("Project file is in invalid format");
+                    }
+                }
+                Err(e) => {
+                    _ = self
+                        .toasts
+                        .error(format!("Failed to open the project. {e}"))
+                }
+            }
         }
     }
 }

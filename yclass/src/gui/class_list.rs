@@ -22,7 +22,11 @@ impl ClassListPanel {
 
     pub fn show(&mut self, ctx: &Context) {
         SidePanel::left("_class_list").show(ctx, |ui| {
-            ui.add_space(8.);
+            ui.add_space(4.);
+            ui.vertical_centered_justified(|ui| {
+                ui.heading("Class list");
+            });
+            ui.add_space(4.);
 
             let state = &mut *self.state.borrow_mut();
             let r = TextEdit::singleline(&mut self.new_class_buf)
@@ -73,8 +77,8 @@ impl ClassListPanel {
                 }
             }
 
-            ScrollArea::vertical().show(ui, |ui| {
-                ui.vertical_centered_justified(|ui| {
+            ui.vertical_centered_justified(|ui| {
+                ScrollArea::vertical().show(ui, |ui| {
                     let selected = state.class_list.selected();
                     let mut new_selection = None;
                     for class in state.class_list.classes_mut() {
