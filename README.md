@@ -24,9 +24,9 @@ cargo r --release
 * Preview of the memory pointer is pointing to.
 
 # Planned features
-* ~~[x] - Writing values.~~
-* ~~[x] - Save/Open project files.~~
-* ~~[x] - Pointer preview on hover with unknown fields.~~
+* [x] - ~~Writing values.~~
+* [x] - ~~Save/Open project files.~~
+* [x] - ~~Pointer preview on hover with unknown fields.~~
 * [ ] - Disassembly of function pointers.
 
 # Plugin API
