@@ -1,6 +1,6 @@
 use crate::{
     context::Selection,
-    field::{Field, HexField},
+    field::{allocate_padding, Field, HexField},
     gui::{ClassListPanel, InspectorPanel, ToolBarPanel, ToolBarResponse},
     process::Process,
     state::StateRef,
@@ -37,7 +37,7 @@ impl App for YClassApp {
                     .or(state.class_list.selected())
                 {
                     let class = state.class_list.by_id_mut(cid).unwrap();
-                    class.fields.extend(get_filled(n));
+                    class.fields.extend(allocate_padding(n));
                 }
             }
             Some(ToolBarResponse::Remove(n)) => {
@@ -81,7 +81,7 @@ impl App for YClassApp {
                             self.inspector.selection_mut().field = Some(replacement.id());
                             class.fields[pos] = replacement;
 
-                            let mut fill = get_filled(rest);
+                            let mut fill = allocate_padding(rest);
                             while let Some(f) = fill.pop() {
                                 class.fields.insert(pos + 1, f);
                             }
@@ -94,7 +94,7 @@ impl App for YClassApp {
                             self.inspector.selection_mut().field = Some(replacement.id());
                             class.fields.insert(pos, replacement);
 
-                            let mut fill = get_filled(stolen - new.size());
+                            let mut fill = allocate_padding(stolen - new.size());
                             while let Some(f) = fill.pop() {
                                 class.fields.insert(pos + 1, f);
                             }
@@ -142,32 +142,6 @@ impl App for YClassApp {
         self.state.borrow_mut().toasts.show(ctx);
         ctx.set_style(saved);
     }
-}
-
-fn get_filled(mut n: usize) -> Vec<Box<dyn Field>> {
-    let mut fields = vec![];
-
-    while n >= 8 {
-        fields.push(Box::new(HexField::<8>::new()) as _);
-        n -= 8;
-    }
-
-    while n >= 4 {
-        fields.push(Box::new(HexField::<4>::new()) as _);
-        n -= 4;
-    }
-
-    while n >= 2 {
-        fields.push(Box::new(HexField::<2>::new()) as _);
-        n -= 2;
-    }
-
-    while n > 0 {
-        fields.push(Box::new(HexField::<1>::new()) as _);
-        n -= 1;
-    }
-
-    fields
 }
 
 pub fn is_valid_ident(name: &str) -> bool {

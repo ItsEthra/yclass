@@ -27,6 +27,14 @@ impl PointerField {
         }
     }
 
+    pub fn new_with_class_id(name: String, class_id: usize) -> Self {
+        Self {
+            id: next_id(),
+            state: NamedState::new(name),
+            class_id: Some(class_id).into(),
+        }
+    }
+
     fn show_header(&self, ui: &mut Ui, ctx: &mut InspectionContext, address: usize) {
         let class = self.class_id.get().and_then(|id| ctx.class_list.by_id(id));
 

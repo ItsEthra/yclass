@@ -13,6 +13,7 @@ mod field;
 mod generator;
 mod gui;
 mod process;
+mod project;
 mod state;
 
 use eframe::{

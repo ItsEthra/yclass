@@ -73,6 +73,10 @@ impl ClassList {
         self.classes.iter_mut().find(|c| c.id == id)
     }
 
+    pub fn by_name(&self, name: &str) -> Option<&Class> {
+        self.classes.iter().find(|c| c.name == name)
+    }
+
     pub fn delete_by_id(&mut self, id: usize) {
         self.classes.retain(|c| c.id != id);
     }
