@@ -1,6 +1,5 @@
-use std::slice;
 use super::{
-    create_text_format, display_field_name, display_field_prelude, next_id, CodegenData, Field,
+    display_field_name, display_field_prelude, display_field_value, next_id, CodegenData, Field,
     FieldId, FieldKind, FieldResponse, NamedState,
 };
 use crate::{context::InspectionContext, generator::Generator};
@@ -8,6 +7,7 @@ use eframe::{
     egui::{Label, Sense, Ui},
     epaint::{text::LayoutJob, Color32},
 };
+use std::slice;
 
 pub struct BoolField {
     id: FieldId,
@@ -38,8 +38,8 @@ impl Field for BoolField {
 
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
         let mut val = 0u8;
-        ctx.process
-            .read(ctx.address + ctx.offset, slice::from_mut(&mut val));
+        let address = ctx.address + ctx.offset;
+        ctx.process.read(address, slice::from_mut(&mut val));
 
         ui.horizontal(|ui| {
             let mut job = LayoutJob::default();
@@ -50,21 +50,32 @@ impl Field for BoolField {
             }
 
             display_field_name(self, ui, ctx, &self.state, Color32::GOLD);
-
-            let mut job = LayoutJob::default();
-            job.append(
-                match val {
-                    1 => "true",
-                    0 => "false",
-                    _ => "invalid",
+            display_field_value(
+                self,
+                ui,
+                ctx,
+                &self.state,
+                Color32::WHITE,
+                |_| {
+                    match val {
+                        1 => "true",
+                        0 => "false",
+                        _ => "invalid",
+                    }
+                    .to_owned()
                 },
-                0.,
-                create_text_format(ctx.is_selected(self.id), Color32::WHITE),
+                |new: &str| match new {
+                    "1" | "true" | "yes" | "on" => {
+                        ctx.process.write(address, &[1]);
+                        true
+                    }
+                    "0" | "false" | "no" | "off" => {
+                        ctx.process.write(address, &[0]);
+                        true
+                    }
+                    _ => false,
+                },
             );
-
-            if ui.add(Label::new(job).sense(Sense::click())).clicked() {
-                ctx.select(self.id);
-            }
         });
 
         ctx.offset += 1;

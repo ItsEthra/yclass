@@ -24,17 +24,26 @@ cargo r --release
 * Preview of the memory pointer is pointing to.
 
 # Planned features
-* [ ] - Writing values.
-* [x] - Save/Open project files.
-* [x] - Pointer preview on hover with unknown fields.
+* ~~[x] - Writing values.~~
+* ~~[x] - Save/Open project files.~~
+* ~~[x] - Pointer preview on hover with unknown fields.~~
 * [ ] - Disassembly of function pointers.
 
 # Plugin API
 You can write a plugin to change the way `YClass` reads memory.
 To do that you will need a shared library(`.dll` or `.so`) that exports following functions
+specified below. `u32` return value should be treated as status code. If it's `0` then no error is displayed.
+Otherwise return value is displayed in the notification.
+Required functions:
 * `fn yc_attach(process_id: u32) -> u32` - Called when attaching to a process.
-* `fn yc_read(address: usize, buffer: *mut u8, buffer_size: usize) -> u32` - Called when reading memory(very frequently).
-* `fn yc_can_read(address: usize) -> bool` - Called to check if address is "readable", i.e. a pointer.
+* `fn yc_read(address: usize, buffer: *mut u8, buffer_size: usize) -> u32` - Called(very frequently) when reading memory.
+    * `address` is in attached process address space.
+    * `buffer` is in current process address space.
+* `fn yc_write(address: usize, buffer: *const u8, buffer_size: usize) -> u32` - Called(rarely) when writing memory.
+    * `address` is in attached process address space.
+    * `buffer` is in current process address space.
+* `fn yc_can_read(address: usize) -> bool` - Called(mildly frequently) to check if address is "readable", i.e. a pointer.
+    * `address` is in attached process address space.
 * `fn yc_detach()` - Called when detaching from a process.
 ### After its done, put your library at `./plugin.ycpl` or specify the path under `plugin_path` key in your config.
 Config path:

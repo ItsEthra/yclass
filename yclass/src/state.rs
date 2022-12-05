@@ -16,7 +16,7 @@ pub struct GlobalState {
     pub last_opened_project: Option<PathBuf>,
     /// `true` means project was just created and contains no useful
     /// information
-    pub dummy: bool
+    pub dummy: bool,
 }
 
 impl Default for GlobalState {

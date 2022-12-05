@@ -134,7 +134,13 @@ impl<const N: usize> HexField<N> {
         }
     }
 
-    fn pointer_view(&self, ui: &mut Ui, ctx: &mut InspectionContext, buf: &[u8; N], response: &mut Option<FieldResponse>) {
+    fn pointer_view(
+        &self,
+        ui: &mut Ui,
+        ctx: &mut InspectionContext,
+        buf: &[u8; N],
+        response: &mut Option<FieldResponse>,
+    ) {
         if N != 8 {
             return;
         }

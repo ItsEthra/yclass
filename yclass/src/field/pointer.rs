@@ -1,8 +1,8 @@
 use super::{
-    create_text_format, display_field_name, display_field_prelude, next_id, CodegenData, Field,
-    FieldId, FieldKind, FieldResponse, NamedState,
+    create_text_format, display_field_name, display_field_prelude, display_field_value, next_id,
+    CodegenData, Field, FieldId, FieldKind, FieldResponse, NamedState,
 };
-use crate::{context::InspectionContext, generator::Generator, FID_M};
+use crate::{address::parse_address, context::InspectionContext, generator::Generator, FID_M};
 use eframe::{
     egui::{
         collapsing_header::CollapsingState, popup_below_widget, Id, Key, Label, RichText, Sense,
@@ -55,17 +55,43 @@ impl PointerField {
         display_field_name(self, ui, ctx, &self.state, Color32::BROWN);
 
         let is_selected = ctx.is_selected(self.id);
+        let paddr = ctx.address + ctx.offset;
         let uniq_id = ctx.address + ctx.offset + self.id as usize;
 
-        let mut job = LayoutJob::default();
-        job.append(
-            &format!(" -> {address:X}"),
-            0.,
-            create_text_format(is_selected, Color32::YELLOW),
+        ui.add_space(4.);
+
+        display_field_value(
+            self,
+            ui,
+            ctx,
+            &self.state,
+            Color32::YELLOW,
+            |v| {
+                if v {
+                    format!("{address:X}")
+                } else {
+                    format!("-> {address:X}")
+                }
+            },
+            |new| {
+                if let Some(addr) = parse_address(new) {
+                    ctx.process.write(paddr, &addr.to_ne_bytes());
+                    true
+                } else {
+                    false
+                }
+            },
         );
-        if ui.add(Label::new(job).sense(Sense::click())).clicked() {
-            ctx.select(self.id);
-        }
+
+        // let mut job = LayoutJob::default();
+        // job.append(
+        //     &format!(" -> {address:X}"),
+        //     0.,
+        //     create_text_format(is_selected, Color32::YELLOW),
+        // );
+        // if ui.add(Label::new(job).sense(Sense::click())).clicked() {
+        //     ctx.select(self.id);
+        // }
 
         let mut job = LayoutJob::default();
         job.append(
