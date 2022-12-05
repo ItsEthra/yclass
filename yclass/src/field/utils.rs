@@ -33,7 +33,7 @@ pub fn display_field_name(
     color: Color32,
 ) {
     if state
-        .editing_address
+        .renaming_address
         .get()
         .map(|e_addr| e_addr == ctx.address + ctx.offset)
         .unwrap_or_default()
@@ -64,13 +64,13 @@ pub fn display_field_name(
 
         if r.clicked_elsewhere() {
             *name = std::mem::take(&mut *state.saved_name.borrow_mut());
-            state.editing_address.set(None);
+            state.renaming_address.set(None);
         } else if r.lost_focus() {
             if !is_valid_ident(name) {
                 ctx.toasts.error("Not a valid field name");
                 state.focused_address.set(Some(ctx.address + ctx.offset));
             } else {
-                state.editing_address.set(None);
+                state.renaming_address.set(None);
             }
         }
     } else {
@@ -84,7 +84,7 @@ pub fn display_field_name(
         let r = ui.add(Label::new(job).sense(Sense::click()));
         if r.secondary_clicked() {
             *state.saved_name.borrow_mut() = state.name.borrow().clone();
-            state.editing_address.set(Some(ctx.address + ctx.offset));
+            state.renaming_address.set(Some(ctx.address + ctx.offset));
             state.focused_address.set(Some(ctx.address + ctx.offset));
         } else if r.clicked() {
             ctx.select(field.id());

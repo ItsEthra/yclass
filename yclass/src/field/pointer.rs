@@ -167,7 +167,7 @@ impl Field for PointerField {
         let mut state = CollapsingState::load_with_default_open(ui.ctx(), Id::new(uniq_id), false);
         if ctx.is_selected(self.id)
             && ui.input().key_pressed(Key::Space)
-            && self.state.editing_address.get().is_none()
+            && self.state.renaming_address.get().is_none()
         // TODO(ItsEthra): questionable line of code ^^
         {
             state.toggle(ui);

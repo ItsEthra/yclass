@@ -41,7 +41,7 @@ pub struct CodegenData<'a> {
 
 #[derive(Default)]
 pub struct NamedState {
-    editing_address: Cell<Option<usize>>,
+    renaming_address: Cell<Option<usize>>,
     focused_address: Cell<Option<usize>>,
     name: RefCell<String>,
     saved_name: RefCell<String>,
