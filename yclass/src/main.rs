@@ -25,7 +25,7 @@ use eframe::{
     NativeOptions, Theme,
 };
 use state::GlobalState;
-use std::{time::Duration, cell::RefCell};
+use std::{cell::RefCell, time::Duration};
 
 /// Monospaced font id.
 const FID_M: FontId = FontId::monospace(20.);
@@ -55,10 +55,12 @@ fn main() {
             cc.egui_ctx
                 .request_repaint_after(Duration::from_millis(100));
 
-            Box::new(app::YClassApp::new(Box::leak(Box::new(RefCell::new(GlobalState {
-                config,
-                ..Default::default()
-            })))))
+            Box::new(app::YClassApp::new(Box::leak(Box::new(RefCell::new(
+                GlobalState {
+                    config,
+                    ..Default::default()
+                },
+            )))))
         }),
     )
 }

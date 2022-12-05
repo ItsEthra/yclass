@@ -36,7 +36,7 @@ impl Generator for RustGenerator {
         let size = kind.size();
         if self.offset != self.last_offset {
             self.text += &format!(
-                "    _pad_0x{:x}: [u8; 0x{:x}]\n",
+                "    _pad_0x{:x}: [u8; 0x{:x}],\n",
                 self.offset,
                 self.offset - self.last_offset
             );

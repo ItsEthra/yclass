@@ -100,11 +100,17 @@ impl<const N: usize> Field for IntField<N> {
                     1 if self.signed => (buf[0] as i8).to_string(),
                     1 if !self.signed => (buf[0] as u8).to_string(),
                     2 if self.signed => i16::from_ne_bytes(buf[..].try_into().unwrap()).to_string(),
-                    2 if !self.signed => u16::from_ne_bytes(buf[..].try_into().unwrap()).to_string(),
+                    2 if !self.signed => {
+                        u16::from_ne_bytes(buf[..].try_into().unwrap()).to_string()
+                    }
                     4 if self.signed => i32::from_ne_bytes(buf[..].try_into().unwrap()).to_string(),
-                    4 if !self.signed => u32::from_ne_bytes(buf[..].try_into().unwrap()).to_string(),
+                    4 if !self.signed => {
+                        u32::from_ne_bytes(buf[..].try_into().unwrap()).to_string()
+                    }
                     8 if self.signed => i64::from_ne_bytes(buf[..].try_into().unwrap()).to_string(),
-                    8 if !self.signed => u64::from_ne_bytes(buf[..].try_into().unwrap()).to_string(),
+                    8 if !self.signed => {
+                        u64::from_ne_bytes(buf[..].try_into().unwrap()).to_string()
+                    }
                     _ => unreachable!(),
                 },
                 |new| self.write_value(new, address, ctx.process),

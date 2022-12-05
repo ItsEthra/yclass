@@ -186,28 +186,31 @@ impl<const N: usize> HexField<N> {
                                 ctx.address = address;
                                 ctx.offset = 0;
 
-                                ScrollArea::vertical().stick_to_bottom(true).show_rows(
-                                    ui,
-                                    20.,
-                                    preview.children.len(),
-                                    |ui, Range { start, end }| {
-                                        let (start, end) = (start.min(end), start.max(end));
+                                ScrollArea::vertical()
+                                    .stick_to_bottom(true)
+                                    .hscroll(false)
+                                    .show_rows(
+                                        ui,
+                                        20.,
+                                        preview.children.len(),
+                                        |ui, Range { start, end }| {
+                                            let (start, end) = (start.min(end), start.max(end));
 
-                                        ctx.offset += preview
-                                            .children
-                                            .iter()
-                                            .take(start)
-                                            .map(|c| c.size())
-                                            .sum::<usize>();
+                                            ctx.offset += preview
+                                                .children
+                                                .iter()
+                                                .take(start)
+                                                .map(|c| c.size())
+                                                .sum::<usize>();
 
-                                        preview
-                                            .children
-                                            .iter()
-                                            .skip(start)
-                                            .take(end - start)
-                                            .for_each(|child| _ = child.draw(ui, ctx));
-                                    },
-                                );
+                                            preview
+                                                .children
+                                                .iter()
+                                                .skip(start)
+                                                .take(end - start)
+                                                .for_each(|child| _ = child.draw(ui, ctx));
+                                        },
+                                    );
 
                                 (ctx.address, ctx.offset) = saved;
                             });
