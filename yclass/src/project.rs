@@ -21,6 +21,7 @@ struct DataClass {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct ProjectData {
     classes: Vec<DataClass>,
 }
@@ -69,7 +70,7 @@ impl Generator for &mut ProjectDataGenerator {
 }
 
 impl ProjectData {
-    fn store(classes: &[Class]) -> Self {
+    pub fn store(classes: &[Class]) -> Self {
         let mut datagen = ProjectDataGenerator::default();
         let dynam = &mut &mut datagen as &mut dyn Generator;
         let data = CodegenData { classes };
@@ -87,14 +88,14 @@ impl ProjectData {
         }
     }
 
-    fn load(self) -> ClassList {
-        let mut list = ClassList::default();
+    pub fn load(self) -> ClassList {
+        let mut list = ClassList::EMPTY;
 
         self.classes.into_iter().for_each(|mut class| {
             class.fields.sort_by_key(|f| f.offset);
 
-            let cid = list.add_class(class.name);
-            let mut offset = 0;
+            let cid = list.add_empty_class(class.name);
+            let mut current_offset = 0;
 
             for DataField {
                 offset: field_offset,
@@ -104,8 +105,11 @@ impl ProjectData {
             } in class.fields
             {
                 let class = list.by_id_mut(cid).unwrap();
-                if offset < field_offset {
-                    class.fields.extend(allocate_padding(offset - field_offset));
+
+                if field_offset > current_offset {
+                    class
+                        .fields
+                        .extend(allocate_padding(field_offset - current_offset));
                 }
 
                 match kind {
@@ -130,10 +134,19 @@ impl ProjectData {
                     other => class.fields.push(other.into_field(Some(name))),
                 }
 
-                offset = field_offset + kind.size();
+                current_offset = field_offset + kind.size();
             }
         });
 
         list
+    }
+
+    #[allow(clippy::inherent_to_string)]
+    pub fn from_str(text: &str) -> Option<Self> {
+        ron::from_str(text).ok()
+    }
+
+    pub fn to_string(&self) -> String {
+        ron::to_string(self).unwrap()
     }
 }

@@ -18,6 +18,14 @@ impl Class {
         }
     }
 
+    fn empty(id: usize, name: String) -> Self {
+        Self {
+            id,
+            name,
+            fields: vec![],
+        }
+    }
+
     pub fn id(&self) -> usize {
         self.id
     }
@@ -38,12 +46,23 @@ impl Default for ClassList {
 }
 
 impl ClassList {
+    pub const EMPTY: Self = Self {
+        selected: None,
+        classes: vec![],
+    };
+
     pub fn classes(&self) -> &[Class] {
         &self.classes[..]
     }
 
     pub fn classes_mut(&mut self) -> &mut [Class] {
         &mut self.classes[..]
+    }
+
+    pub fn add_empty_class(&mut self, name: String) -> usize {
+        let id = fastrand::usize(..);
+        self.classes.push(Class::empty(id, name));
+        id
     }
 
     pub fn add_class(&mut self, name: String) -> usize {

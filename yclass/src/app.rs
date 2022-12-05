@@ -1,6 +1,6 @@
 use crate::{
     context::Selection,
-    field::{allocate_padding, Field, HexField},
+    field::allocate_padding,
     gui::{ClassListPanel, InspectorPanel, ToolBarPanel, ToolBarResponse},
     process::Process,
     state::StateRef,
