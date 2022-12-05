@@ -9,11 +9,8 @@ use eframe::{
 
 pub fn display_field_prelude(field: &dyn Field, ctx: &mut InspectionContext, job: &mut LayoutJob) {
     job.append(&format!("{:04X}", ctx.offset), 0., {
-        let mut tf = create_text_format(
-            ctx.is_selected(field.id()),
-            Color32::KHAKI,
-            // Highlight unaligned fields
-        );
+        let mut tf = create_text_format(ctx.is_selected(field.id()), Color32::KHAKI);
+        // Highlight unaligned fields
         if ctx.offset % 8 != 0 {
             tf.underline = Stroke::new(1., Color32::RED);
         }
@@ -32,7 +29,11 @@ pub fn display_field_value<T: Display>(
     ui: &mut Ui,
     ctx: &mut InspectionContext,
     state: &NamedState,
-    displayed_value: impl FnOnce() -> T,
+    color: Color32,
+    // if `bool` is `true` it indicates that
+    // the value returned would be used as initial value for
+    // text edit box.
+    mut displayed_value: impl FnMut(bool) -> T,
     write_new_value: impl FnOnce(&str) -> bool,
 ) {
     let editing_value = &mut *state.editing_state.borrow_mut();
@@ -75,16 +76,18 @@ pub fn display_field_value<T: Display>(
     }
 
     let mut job = LayoutJob::default();
-    let displyed = displayed_value().to_string();
     job.append(
-        &displyed,
+        &displayed_value(false).to_string(),
         0.,
-        create_text_format(ctx.is_selected(field.id()), Color32::WHITE),
+        create_text_format(ctx.is_selected(field.id()), color),
     );
 
     let r = ui.add(Label::new(job).sense(Sense::click()));
     if r.secondary_clicked() {
-        *editing_value = Some(EditingState::new(ctx.address + ctx.offset, displyed));
+        *editing_value = Some(EditingState::new(
+            ctx.address + ctx.offset,
+            displayed_value(true).to_string(),
+        ));
     } else if r.clicked() {
         ctx.select(field.id());
     }

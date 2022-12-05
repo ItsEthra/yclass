@@ -95,7 +95,8 @@ impl<const N: usize> Field for IntField<N> {
                 ui,
                 ctx,
                 &self.state,
-                || match N {
+                Color32::WHITE,
+                |_| match N {
                     1 if self.signed => buf[0] as i8 as i64,
                     1 if !self.signed => buf[0] as u8 as i64,
                     2 if self.signed => i16::from_ne_bytes(buf[..].try_into().unwrap()) as i64,

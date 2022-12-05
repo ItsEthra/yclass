@@ -55,7 +55,8 @@ impl Field for BoolField {
                 ui,
                 ctx,
                 &self.state,
-                || {
+                Color32::WHITE,
+                |_| {
                     match val {
                         1 => "true",
                         0 => "false",

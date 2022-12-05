@@ -50,7 +50,8 @@ impl<const N: usize> Field for FloatField<N> {
                 ui,
                 ctx,
                 &self.state,
-                || match N {
+                Color32::WHITE,
+                |_| match N {
                     4 => f32::from_ne_bytes(buf[..].try_into().unwrap()) as f64,
                     8 => f64::from_ne_bytes(buf[..].try_into().unwrap()),
                     _ => unreachable!(),

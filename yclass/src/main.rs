@@ -23,6 +23,7 @@ use eframe::{
     epaint::{FontFamily, FontId},
     NativeOptions, Theme,
 };
+use std::time::Duration;
 
 /// Monospaced font id.
 const FID_M: FontId = FontId::monospace(20.);
@@ -48,6 +49,8 @@ fn main() {
                 .unwrap()
                 .insert(0, "roboto-mono".into());
             cc.egui_ctx.set_fonts(fonts);
+            cc.egui_ctx
+                .request_repaint_after(Duration::from_millis(100));
 
             Box::new(app::YClassApp::new(Box::leak(Box::default())))
         }),
