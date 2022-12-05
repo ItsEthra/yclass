@@ -38,8 +38,9 @@ impl Field for BoolField {
 
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
         let mut val = 0u8;
+        let address = ctx.address + ctx.offset;
         ctx.process
-            .read(ctx.address + ctx.offset, slice::from_mut(&mut val));
+            .read(address, slice::from_mut(&mut val));
 
         ui.horizontal(|ui| {
             let mut job = LayoutJob::default();
@@ -63,9 +64,15 @@ impl Field for BoolField {
                     }
                     .to_owned()
                 },
-                |new| match new {
-                    "1" | "true" | "yes" | "on" => true,
-                    "0" | "false" | "no" | "off" => true,
+                |new: &str| match new {
+                    "1" | "true" | "yes" | "on" => {
+                        ctx.process.write(address, &[1]);
+                        true
+                    },
+                    "0" | "false" | "no" | "off" => {
+                        ctx.process.write(address, &[0]);
+                        true
+                    },
                     _ => false,
                 },
             );

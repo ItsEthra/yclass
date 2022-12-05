@@ -11,6 +11,7 @@ pub struct ManagedExtension {
 
     attach: fn(u32) -> u32,
     read: fn(usize, *mut u8, usize) -> u32,
+    write: fn(usize, *const u8, usize) -> u32,
     can_read: fn(usize) -> bool,
     detach: fn(),
 }
@@ -41,6 +42,7 @@ impl Process {
             let lib = unsafe { Library::new(&path)? };
             let attach = unsafe { *lib.get::<fn(u32) -> u32>(b"yc_attach")? };
             let read = unsafe { *lib.get::<fn(usize, *mut u8, usize) -> u32>(b"yc_read")? };
+            let write = unsafe { *lib.get::<fn(usize, *const u8, usize) -> u32>(b"yc_write")? };
             let can_read = unsafe { *lib.get::<fn(usize) -> bool>(b"yc_can_read")? };
             let detach = unsafe { *lib.get::<fn()>(b"yc_detach")? };
 
@@ -49,6 +51,7 @@ impl Process {
                 lib,
                 attach,
                 read,
+                write,
                 can_read,
                 detach,
             };
@@ -85,6 +88,14 @@ impl Process {
             // TODO(ItsEthra): Proper error handling maybe?.
             Self::Internal((op, _)) => op.read_buf(address, buf).is_ok(),
             Self::Managed(ext) => (ext.read)(address, buf.as_mut_ptr(), buf.len()) == 0,
+        }
+    }
+
+    pub fn write(&self, address: usize, buf: &[u8]) -> bool {
+        match self {
+            // TODO(ItsEthra): Proper error handling maybe?.
+            Self::Internal((op, _)) => op.write_buf(address, buf).is_ok(),
+            Self::Managed(ext) => (ext.write)(address, buf.as_ptr(), buf.len()) == 0,
         }
     }
 
