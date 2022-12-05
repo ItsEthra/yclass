@@ -24,7 +24,7 @@ cargo b --release
 
 # Planned features
 * [ ] - Writing values.
-* [*] - Save/Open project files.
+* [x] - Save/Open project files.
 * [ ] - Pointer preview on hover with unknown fields.
 * [ ] - Disassembly of function pointers.
 
