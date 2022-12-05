@@ -27,11 +27,7 @@ impl PointerField {
     }
 
     fn show_header(&self, ui: &mut Ui, ctx: &mut InspectionContext, address: usize) {
-        let class = self
-            .class_id
-            .get()
-            .map(|id| ctx.class_list.by_id(id))
-            .flatten();
+        let class = self.class_id.get().and_then(|id| ctx.class_list.by_id(id));
 
         let (text, exists) = if let Some(cl) = class {
             (format!("[{}]", cl.name), true)
@@ -122,6 +118,7 @@ impl PointerField {
                 address,
             };
 
+            #[allow(clippy::single_match)]
             match class
                 .fields
                 .iter()
@@ -167,8 +164,8 @@ impl Field for PointerField {
         let mut state = CollapsingState::load_with_default_open(ui.ctx(), Id::new(uniq_id), false);
         if ctx.is_selected(self.id)
             && ui.input().key_pressed(Key::Space)
-            && !self.state.editing_address.get().is_some()
-        // TODO(ItsEthra): questionable line of code
+            && self.state.editing_address.get().is_none()
+        // TODO(ItsEthra): questionable line of code ^^
         {
             state.toggle(ui);
         }
@@ -177,7 +174,7 @@ impl Field for PointerField {
             .show_header(ui, |ui| self.show_header(ui, ctx, address))
             .body(|ui| self.show_body(ui, ctx, address))
             .2;
-        let body = body.map(|inner| inner.inner).flatten();
+        let body = body.and_then(|inner| inner.inner);
 
         if let Some(new) = body {
             response = Some(new);

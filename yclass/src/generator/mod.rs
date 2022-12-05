@@ -34,8 +34,8 @@ impl AvailableGenerator {
 
     pub fn generator(&self) -> Box<dyn Generator> {
         match self {
-            Self::Rust => Box::new(RustGenerator::default()),
-            Self::Cpp => Box::new(CppGenerator::default()),
+            Self::Rust => Box::<RustGenerator>::default(),
+            Self::Cpp => Box::<CppGenerator>::default(),
         }
     }
 }

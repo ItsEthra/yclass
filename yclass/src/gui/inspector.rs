@@ -121,10 +121,8 @@ impl InspectorPanel {
             });
         self.selection = ctx.selection;
 
-        drop(state);
-        let crime = unsafe { &mut *self.state.as_ptr() };
         if let Some((name, id)) = new_class {
-            crime.class_list.add_class_with_id(name, id);
+            state.class_list.add_class_with_id(name, id);
         }
 
         Some(())

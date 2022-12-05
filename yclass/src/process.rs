@@ -54,6 +54,7 @@ impl Process {
 
             Self::Managed(ext)
         } else if modified {
+            #[allow(clippy::unnecessary_unwrap)]
             return Err(metadata.unwrap_err().into());
         } else {
             #[cfg(unix)]

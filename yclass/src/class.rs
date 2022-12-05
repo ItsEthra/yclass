@@ -79,7 +79,6 @@ impl ClassList {
 
     pub fn selected_class(&self) -> Option<&Class> {
         self.selected
-            .map(|i| self.classes.iter().find(|c| c.id == i))
-            .flatten()
+            .and_then(|i| self.classes.iter().find(|c| c.id == i))
     }
 }
