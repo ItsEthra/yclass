@@ -21,6 +21,7 @@ You can write a plugin to change the way `YClass` reads memory.
 To do that you will need a shared library(`.dll` or `.so`) that exports following functions
 * `fn yc_attach(process_id: u32) -> u32` - Called when attaching to a process.
 * `fn yc_read(address: usize, buffer: *mut u8, buffer_size: usize) -> u32` - Called when reading memory(very frequently).
+* `fn yc_can_read()` - Called to check if address is "readable", i.e. a pointer.
 * `fn yc_detach()` - Called when detaching from a process.
 ### After its done, put your library at `./plugin.ycpl` or specify the path under `plugin_path` key in your config.
 Config path:
