@@ -41,12 +41,29 @@ pub struct CodegenData<'a> {
     pub classes: &'a [Class],
 }
 
+pub struct EditingState {
+    address: usize,
+    buf: String,
+    should_focus: bool,
+}
+
+impl EditingState {
+    pub fn new(address: usize, buf: String) -> Self {
+        Self {
+            address,
+            buf,
+            should_focus: true,
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct NamedState {
     renaming_address: Cell<Option<usize>>,
     focused_address: Cell<Option<usize>>,
     name: RefCell<String>,
     saved_name: RefCell<String>,
+    editing_state: RefCell<Option<EditingState>>,
 }
 
 impl NamedState {

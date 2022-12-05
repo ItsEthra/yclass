@@ -1,6 +1,5 @@
-use std::slice;
 use super::{
-    create_text_format, display_field_name, display_field_prelude, next_id, CodegenData, Field,
+    display_field_name, display_field_prelude, display_field_value, next_id, CodegenData, Field,
     FieldId, FieldKind, FieldResponse, NamedState,
 };
 use crate::{context::InspectionContext, generator::Generator};
@@ -8,6 +7,7 @@ use eframe::{
     egui::{Label, Sense, Ui},
     epaint::{text::LayoutJob, Color32},
 };
+use std::slice;
 
 pub struct BoolField {
     id: FieldId,
@@ -50,21 +50,25 @@ impl Field for BoolField {
             }
 
             display_field_name(self, ui, ctx, &self.state, Color32::GOLD);
-
-            let mut job = LayoutJob::default();
-            job.append(
-                match val {
-                    1 => "true",
-                    0 => "false",
-                    _ => "invalid",
+            display_field_value(
+                self,
+                ui,
+                ctx,
+                &self.state,
+                || {
+                    match val {
+                        1 => "true",
+                        0 => "false",
+                        _ => "invalid",
+                    }
+                    .to_owned()
                 },
-                0.,
-                create_text_format(ctx.is_selected(self.id), Color32::WHITE),
+                |new| match new {
+                    "1" | "true" | "yes" | "on" => true,
+                    "0" | "false" | "no" | "off" => true,
+                    _ => false,
+                },
             );
-
-            if ui.add(Label::new(job).sense(Sense::click())).clicked() {
-                ctx.select(self.id);
-            }
         });
 
         ctx.offset += 1;
