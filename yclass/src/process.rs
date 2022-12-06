@@ -115,10 +115,10 @@ impl Process {
         }
     }
 
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> Option<String> {
         match self {
             Self::Internal((op, _)) => op.name(),
-            Self::Managed(_) => "[MANAGED]".into(),
+            Self::Managed(_) => Some("[MANAGED]".into()),
         }
     }
 }

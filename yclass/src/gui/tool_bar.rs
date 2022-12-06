@@ -83,7 +83,7 @@ impl ToolBarPanel {
                     ui.separator();
                     ui.add_space(4.);
 
-                    self.status_ui(ui);
+                    self.status_ui(ui, &mut response);
 
                     ui.add_space(4.);
                     ui.separator();
@@ -195,7 +195,7 @@ impl ToolBarPanel {
         }
     }
 
-    fn status_ui(&mut self, ui: &mut Ui) {
+    fn status_ui(&mut self, ui: &mut Ui, response: &mut Option<ToolBarResponse>) {
         if let Some((proc_name, proc_id)) = self
             .state
             .borrow()
@@ -203,12 +203,16 @@ impl ToolBarPanel {
             .as_ref()
             .map(|p| (p.name(), p.id()))
         {
-            #[cfg(unix)]
-            let text = format!("Status: Attached to {} - {}", proc_name, proc_id);
-            #[cfg(windows)]
-            let text = format!("Status: Attached to {} - 0x{:X}", proc_name, proc_id);
+            if let Some(name) = proc_name {
+                #[cfg(unix)]
+                let text = format!("Status: Attached to {} - {}", name, proc_id);
+                #[cfg(windows)]
+                let text = format!("Status: Attached to {} - 0x{:X}", name, proc_id);
 
-            ui.label(text);
+                ui.label(text);
+            } else {
+                *response = Some(ToolBarResponse::ProcessDetach);
+            }
         } else {
             ui.label("Status: Detached");
         }

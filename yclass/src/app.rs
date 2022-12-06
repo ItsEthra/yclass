@@ -123,8 +123,10 @@ impl App for YClassApp {
                     Ok(proc) => {
                         frame.set_window_title(&format!("YClass - Attached to {pid}"));
                         if let Process::Internal((op, _)) = &proc {
-                            state.config.last_attached_process_name = Some(op.name());
-                            state.config.save();
+                            if let Some(name) = op.name() {
+                                state.config.last_attached_process_name = Some(name);
+                                state.config.save();
+                            }
                         }
 
                         state.process = Some(proc);

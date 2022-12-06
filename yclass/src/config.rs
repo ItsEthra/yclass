@@ -26,7 +26,7 @@ impl YClassConfig {
         } else {
             let value = Self::default();
             if let Some(p) = path.parent() {
-                fs::create_dir_all(p).unwrap();
+                fs::create_dir_all(dbg!(p)).unwrap();
             }
 
             fs::write(&path, toml::to_string(&value).unwrap().as_bytes()).unwrap();
