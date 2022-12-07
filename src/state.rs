@@ -71,7 +71,7 @@ impl GlobalState {
         }
     }
 
-    pub fn open_project(&mut self) {
+    pub fn open_project(&mut self) -> bool {
         if !self.class_list.classes().is_empty() && !dbg!(self.dummy) {
             self.save_project(None);
         }
@@ -81,21 +81,32 @@ impl GlobalState {
             .add_filter("YClass project", &["yclass"])
             .pick_file()
         {
-            match fs::read_to_string(&path) {
-                Ok(data) => {
-                    if let Some(pd) = ProjectData::from_str(&data) {
-                        self.class_list = pd.load();
-                        self.dummy = false;
-                        self.last_opened_project = Some(path);
-                    } else {
-                        self.toasts.error("Project file is in invalid format");
-                    }
+            self.open_project_path(&path)
+        } else {
+            true
+        }
+    }
+
+    pub fn open_project_path(&mut self, path: &Path) -> bool {
+        match fs::read_to_string(&path) {
+            Ok(data) => {
+                if let Some(pd) = ProjectData::from_str(&data) {
+                    self.class_list = pd.load();
+                    self.dummy = false;
+                    self.last_opened_project = Some(path.to_path_buf());
+
+                    self.config.recent_projects.insert(path.to_path_buf());
+                    self.config.save();
+                    true
+                } else {
+                    self.toasts.error("Project file is in invalid format");
+                    false
                 }
-                Err(e) => {
-                    _ = self
-                        .toasts
-                        .error(format!("Failed to open the project. {e}"))
-                }
+            }
+            Err(e) => {
+                self.toasts
+                    .error(format!("Failed to open the project. {e}"));
+                false
             }
         }
     }

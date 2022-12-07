@@ -156,6 +156,27 @@ impl ToolBarPanel {
             ui.close_menu();
         }
 
+        if !state.config.recent_projects.is_empty() {
+            ui.menu_button("Open recent...", |ui| {
+                let mut to_open = None;
+                for project in state.config.recent_projects.iter() {
+                    if let Some(name) = project.file_name().and_then(|name| name.to_str()) {
+                        if ui.button(name).clicked() {
+                            to_open = Some(project.to_owned());
+                        }
+                    }
+                }
+
+                if let Some(path) = to_open {
+                    if state.open_project_path(&path) {
+                        ui.close_menu();
+                    } else {
+                        state.config.recent_projects.remove(&path);
+                    }
+                }
+            });
+        }
+
         if ui.button("Save project").clicked() {
             state.save_project(None);
             ui.close_menu();
@@ -224,6 +245,7 @@ impl ToolBarPanel {
                     *response = Some(ToolBarResponse::ProcessDetach);
                 }
             };
+        } else {
             ui.label("Status: Detached");
         }
     }
