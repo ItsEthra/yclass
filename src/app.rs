@@ -46,6 +46,8 @@ impl App for YClassApp {
                 {
                     let class = state.class_list.by_id_mut(cid).unwrap();
                     class.fields.extend(allocate_padding(n));
+
+                    state.dummy = false;
                 }
             }
             Some(ToolBarResponse::Remove(n)) => {
@@ -68,6 +70,8 @@ impl App for YClassApp {
                     let to = (pos + n).min(class.fields.len());
 
                     class.fields.drain(from..to);
+
+                    state.dummy = false;
                 }
             }
             Some(ToolBarResponse::Insert(n)) => {
@@ -90,6 +94,8 @@ impl App for YClassApp {
                     while let Some(field) = padding.pop() {
                         class.fields.insert(pos, field);
                     }
+
+                    state.dummy = false;
                 }
             }
             Some(ToolBarResponse::ChangeKind(new)) => {
@@ -138,6 +144,8 @@ impl App for YClassApp {
                         self.inspector.selection.as_mut().unwrap().field_id =
                             class.fields[pos].id();
                     }
+
+                    state.dummy = false;
                 }
             }
             Some(ToolBarResponse::ProcessDetach) => {
