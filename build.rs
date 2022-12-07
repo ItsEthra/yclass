@@ -1,5 +1,5 @@
 fn main() {
-    let line = dbg!(include_str!("./Cargo.toml"))
+    let line = include_str!("./Cargo.toml")
         .lines()
         .find(|l| l.starts_with("version = "))
         .unwrap()

@@ -49,13 +49,11 @@ impl ProcessAttachWindow {
                                 self.filter.is_empty()
                                     || pe.name.to_lowercase().contains(&self.filter.to_lowercase())
                             }) {
-                                #[cfg(unix)]
-                                let text = format!("{} - {}", pe.name, pe.id);
-                                #[cfg(windows)]
-                                let text = format!("{} - 0x{:X}", pe.name, pe.id);
-
                                 if ui
-                                    .button(RichText::new(text).font(FontId::proportional(16.)))
+                                    .button(
+                                        RichText::new(format!("{} - {}", pe.name, pe.id))
+                                            .font(FontId::proportional(16.)),
+                                    )
                                     .clicked()
                                 {
                                     attach_pid = Some(pe.id);

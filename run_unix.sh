@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cargo b && sudo ./target/debug/yclass
+cargo b && sudo RUST_BACKTRACE=1 ./target/debug/yclass

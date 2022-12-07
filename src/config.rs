@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf};
+use std::{collections::HashSet, fs, path::PathBuf};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct YClassConfig {
@@ -8,6 +8,7 @@ pub struct YClassConfig {
     pub last_address: Option<usize>,
 
     pub plugin_path: Option<PathBuf>,
+    pub recent_projects: Option<HashSet<PathBuf>>,
     pub dpi: Option<f32>,
 }
 
@@ -26,7 +27,7 @@ impl YClassConfig {
         } else {
             let value = Self::default();
             if let Some(p) = path.parent() {
-                fs::create_dir_all(dbg!(p)).unwrap();
+                fs::create_dir_all(p).unwrap();
             }
 
             fs::write(&path, toml::to_string(&value).unwrap().as_bytes()).unwrap();

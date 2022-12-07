@@ -1,4 +1,22 @@
-[workspace]
-members = [
-    "yclass",
-]
+[package]
+name = "yclass"
+version = "0.2.0"
+edition = "2021"
+description = "Inspect and recreate in-memory data structures"
+license = "MIT"
+authors = ["ItsEthra"]
+repository = "https://github.com/ItsEthra/yclass"
+readme = "README.md"
+
+[dependencies]
+memflex = { git = "https://github.com/ItsEthra/memflex", features = ["external"] }
+serde = { version = "1.0", features = ["derive"] }
+egui-notify = "0.4"
+libloading = "0.7"
+fastrand = "1.8"
+eframe = "0.19"
+toml = "0.5"
+eyre = "0.6"
+dirs = "4.0"
+rfd = "0.10"
+ron = "0.8"

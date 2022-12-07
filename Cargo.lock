@@ -558,6 +558,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "eyre"
+version = "0.6.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c2b6b5a29c02cdc822728b7d7b8ae1bab3e3b05d44522770ddd49722eeac7eb"
+dependencies = [
+ "indenter",
+ "once_cell",
+]
+
+[[package]]
 name = "fastrand"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -871,6 +881,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "indenter"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
+
+[[package]]
 name = "instant"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -975,8 +991,8 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "memflex"
-version = "0.1.2"
-source = "git+https://github.com/ItsEthra/memflex#88d2445ce998d77f98e05d1603bb630f8d3a9117"
+version = "0.2.0"
+source = "git+https://github.com/ItsEthra/memflex#27d248d73a246c3cec02c44574aca35b54c2a27d"
 dependencies = [
  "bitflags",
  "libc",
@@ -2218,6 +2234,7 @@ dependencies = [
  "dirs",
  "eframe",
  "egui-notify",
+ "eyre",
  "fastrand",
  "libloading",
  "memflex",

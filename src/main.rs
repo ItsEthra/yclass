@@ -44,7 +44,7 @@ fn main() {
             let mut fonts = FontDefinitions::default();
             fonts.font_data.insert(
                 "roboto-mono".into(),
-                FontData::from_static(include_bytes!("../../fonts/RobotoMono-Regular.ttf")),
+                FontData::from_static(include_bytes!("../fonts/RobotoMono-Regular.ttf")),
             );
             fonts
                 .families

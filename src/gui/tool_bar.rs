@@ -28,6 +28,7 @@ pub enum ToolBarResponse {
     ProcessDetach,
     Add(usize),
     Remove(usize),
+    Insert(usize),
     ChangeKind(FieldKind),
 }
 
@@ -105,7 +106,7 @@ impl ToolBarPanel {
 
                         ui.vertical_centered_justified(|ui| {
                             create_add_remove_group!(
-                                ui, response, Add, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096
+                                ui, response, Add, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096
                             );
                         });
                     })
@@ -119,6 +120,16 @@ impl ToolBarPanel {
                     })
                     .response
                     .on_hover_text("Removes N fields");
+
+                    ui.menu_button("Insert", |ui| {
+                        ui.set_width(64.);
+
+                        create_add_remove_group!(
+                            ui, response, Insert, 1, 2, 4, 8, 16, 64, 256, 1024
+                        );
+                    })
+                    .response
+                    .on_hover_text("Inserts N bytes");
 
                     ui.add_space(2.);
                     ui.separator();
@@ -143,6 +154,33 @@ impl ToolBarPanel {
         if ui.button("Open project").clicked() {
             state.open_project();
             ui.close_menu();
+        }
+
+        if !state
+            .config
+            .recent_projects
+            .as_ref()
+            .map(|h| h.is_empty())
+            .unwrap_or(true)
+        {
+            ui.menu_button("Open recent...", |ui| {
+                let mut to_open = None;
+                for project in state.config.recent_projects.as_ref().unwrap().iter() {
+                    if let Some(name) = project.file_name().and_then(|name| name.to_str()) {
+                        if ui.button(name).clicked() {
+                            to_open = Some(project.to_owned());
+                        }
+                    }
+                }
+
+                if let Some(path) = to_open {
+                    if state.open_project_path(&path) {
+                        ui.close_menu();
+                    } else {
+                        state.config.recent_projects.as_mut().unwrap().remove(&path);
+                    }
+                }
+            });
         }
 
         if ui.button("Save project").clicked() {
@@ -203,16 +241,16 @@ impl ToolBarPanel {
             .as_ref()
             .map(|p| (p.name(), p.id()))
         {
-            if let Some(name) = proc_name {
-                #[cfg(unix)]
-                let text = format!("Status: Attached to {} - {}", name, proc_id);
-                #[cfg(windows)]
-                let text = format!("Status: Attached to {} - 0x{:X}", name, proc_id);
-
-                ui.label(text);
-            } else {
-                *response = Some(ToolBarResponse::ProcessDetach);
-            }
+            match proc_name {
+                Ok(name) => _ = ui.label(format!("Status: Attached to {} - {}", name, proc_id)),
+                Err(e) => {
+                    self.state
+                        .borrow_mut()
+                        .toasts
+                        .error(format!("Failed to get process name: {e}"));
+                    *response = Some(ToolBarResponse::ProcessDetach);
+                }
+            };
         } else {
             ui.label("Status: Detached");
         }

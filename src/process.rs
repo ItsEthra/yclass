@@ -1,7 +1,7 @@
 use crate::config::YClassConfig;
 use libloading::Library;
 use memflex::external::{MemoryRegion, OwnedProcess};
-use std::{error::Error, fs};
+use std::fs;
 
 pub struct ManagedExtension {
     #[allow(dead_code)]
@@ -28,7 +28,7 @@ pub enum Process {
 }
 
 impl Process {
-    pub fn attach(pid: u32, config: &YClassConfig) -> Result<Self, Box<dyn Error>> {
+    pub fn attach(pid: u32, config: &YClassConfig) -> eyre::Result<Self> {
         let (path, modified) = (
             config
                 .plugin_path
@@ -78,7 +78,7 @@ impl Process {
                 )?
             };
 
-            let maps = proc.maps();
+            let maps = proc.maps()?;
             Self::Internal((proc, maps))
         })
     }
@@ -115,10 +115,10 @@ impl Process {
         }
     }
 
-    pub fn name(&self) -> Option<String> {
+    pub fn name(&self) -> eyre::Result<String> {
         match self {
-            Self::Internal((op, _)) => op.name(),
-            Self::Managed(_) => Some("[MANAGED]".into()),
+            Self::Internal((op, _)) => op.name().map_err(Into::into),
+            Self::Managed(_) => Ok("[MANAGED]".into()),
         }
     }
 }
