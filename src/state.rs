@@ -2,6 +2,7 @@ use crate::{class::ClassList, config::YClassConfig, process::Process, project::P
 use egui_notify::Toasts;
 use std::{
     cell::RefCell,
+    collections::HashSet,
     fs,
     path::{Path, PathBuf},
 };
@@ -95,8 +96,14 @@ impl GlobalState {
                     self.dummy = false;
                     self.last_opened_project = Some(path.to_path_buf());
 
-                    self.config.recent_projects.insert(path.to_path_buf());
+                    if let Some(recent) = self.config.recent_projects.as_mut() {
+                        recent.insert(path.to_path_buf());
+                    } else {
+                        self.config.recent_projects =
+                            Some(HashSet::from_iter([path.to_path_buf()]));
+                    }
                     self.config.save();
+
                     true
                 } else {
                     self.toasts.error("Project file is in invalid format");

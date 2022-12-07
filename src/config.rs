@@ -8,7 +8,7 @@ pub struct YClassConfig {
     pub last_address: Option<usize>,
 
     pub plugin_path: Option<PathBuf>,
-    pub recent_projects: HashSet<PathBuf>,
+    pub recent_projects: Option<HashSet<PathBuf>>,
     pub dpi: Option<f32>,
 }
 

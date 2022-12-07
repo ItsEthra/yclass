@@ -156,10 +156,16 @@ impl ToolBarPanel {
             ui.close_menu();
         }
 
-        if !state.config.recent_projects.is_empty() {
+        if !state
+            .config
+            .recent_projects
+            .as_ref()
+            .map(|h| h.is_empty())
+            .unwrap_or(true)
+        {
             ui.menu_button("Open recent...", |ui| {
                 let mut to_open = None;
-                for project in state.config.recent_projects.iter() {
+                for project in state.config.recent_projects.as_ref().unwrap().iter() {
                     if let Some(name) = project.file_name().and_then(|name| name.to_str()) {
                         if ui.button(name).clicked() {
                             to_open = Some(project.to_owned());
@@ -171,7 +177,7 @@ impl ToolBarPanel {
                     if state.open_project_path(&path) {
                         ui.close_menu();
                     } else {
-                        state.config.recent_projects.remove(&path);
+                        state.config.recent_projects.as_mut().unwrap().remove(&path);
                     }
                 }
             });
