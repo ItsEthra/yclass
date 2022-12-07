@@ -1,13 +1,10 @@
-use std::sync::Once;
-
 use crate::{
-    context::Selection,
-    field::allocate_padding,
     gui::{ClassListPanel, InspectorPanel, ToolBarPanel, ToolBarResponse},
     process::Process,
     state::StateRef,
 };
 use eframe::{egui::Context, epaint::Color32, App, Frame};
+use std::sync::Once;
 
 pub struct YClassApp {
     class_list: ClassListPanel,
@@ -36,82 +33,17 @@ impl App for YClassApp {
         });
 
         match self.tool_bar.show(ctx) {
-            Some(ToolBarResponse::Add(n)) => {
-                let state = &mut *self.state.borrow_mut();
-                if let Some(cid) = self
-                    .inspector
-                    .selection()
-                    .container
-                    .or(state.class_list.selected())
-                {
-                    let class = state.class_list.by_id_mut(cid).unwrap();
-                    class.fields.extend(allocate_padding(n));
-                }
+            Some(ToolBarResponse::Add(_n)) => {
+                todo!()
             }
-            Some(ToolBarResponse::Remove(n)) => {
-                if let Selection {
-                    field: Some(field_id),
-                    container: Some(container_id),
-                } = self.inspector.selection()
-                {
-                    let state = &mut *self.state.borrow_mut();
-                    let class = state.class_list.by_id_mut(container_id).unwrap();
-
-                    if let Some(pos) = class.fields.iter().position(|f| f.id() == field_id) {
-                        class
-                            .fields
-                            .drain(pos.min(class.fields.len())..(pos + n).min(class.fields.len()));
-
-                        if let Some(new_selection) = class.fields.get(pos).map(|f| f.id()) {
-                            self.inspector.selection_mut().field = Some(new_selection);
-                        }
-                    } else {
-                        unreachable!()
-                    }
-                }
+            Some(ToolBarResponse::Remove(_n)) => {
+                todo!()
             }
-            Some(ToolBarResponse::ChangeKind(new)) => {
-                if let Selection {
-                    field: Some(field_id),
-                    container: Some(container_id),
-                } = self.inspector.selection()
-                {
-                    let state = &mut *self.state.borrow_mut();
-                    let class = state.class_list.by_id_mut(container_id).unwrap();
-
-                    if let Some(pos) = class.fields.iter().position(|f| f.id() == field_id) {
-                        let old_size = class.fields[pos].size();
-                        let replacement = new.into_field(class.fields[pos].name());
-
-                        if old_size > new.size() {
-                            let rest = old_size - new.size();
-
-                            self.inspector.selection_mut().field = Some(replacement.id());
-                            class.fields[pos] = replacement;
-
-                            let mut fill = allocate_padding(rest);
-                            while let Some(f) = fill.pop() {
-                                class.fields.insert(pos + 1, f);
-                            }
-                        } else {
-                            let mut stolen = 0;
-                            while stolen < new.size() {
-                                stolen += class.fields.remove(pos).size();
-                            }
-
-                            self.inspector.selection_mut().field = Some(replacement.id());
-                            class.fields.insert(pos, replacement);
-
-                            let mut fill = allocate_padding(stolen - new.size());
-                            while let Some(f) = fill.pop() {
-                                class.fields.insert(pos + 1, f);
-                            }
-                        }
-                        state.dummy = false;
-                    } else {
-                        unreachable!()
-                    }
-                }
+            Some(ToolBarResponse::Insert(_n)) => {
+                todo!()
+            }
+            Some(ToolBarResponse::ChangeKind(_new)) => {
+                todo!()
             }
             Some(ToolBarResponse::ProcessDetach) => {
                 self.state.borrow_mut().process = None;

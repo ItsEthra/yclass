@@ -11,8 +11,9 @@ use eframe::{
 };
 
 pub struct InspectorPanel {
+    pub selection: Option<Selection>,
+
     address_buffer: String,
-    selection: Selection,
     state: StateRef,
     address: usize,
     allow_scroll: bool,
@@ -29,7 +30,7 @@ impl InspectorPanel {
             state,
             address,
             allow_scroll: true,
-            selection: Selection::default(),
+            selection: None,
             address_buffer: format!("0x{address:X}"),
         }
     }
@@ -81,14 +82,6 @@ impl InspectorPanel {
         });
 
         None
-    }
-
-    pub fn selection(&self) -> Selection {
-        self.selection
-    }
-
-    pub fn selection_mut(&mut self) -> &mut Selection {
-        &mut self.selection
     }
 
     fn inspect(&mut self, ui: &mut Ui) -> Option<()> {

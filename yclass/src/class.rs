@@ -1,8 +1,10 @@
 use crate::field::{Field, HexField};
 use std::iter::repeat_with;
 
+pub type ClassId = usize;
+
 pub struct Class {
-    id: usize,
+    id: ClassId,
     pub name: String,
     pub fields: Vec<Box<dyn Field>>,
 }

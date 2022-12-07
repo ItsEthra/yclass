@@ -28,6 +28,7 @@ pub enum ToolBarResponse {
     ProcessDetach,
     Add(usize),
     Remove(usize),
+    Insert(usize),
     ChangeKind(FieldKind),
 }
 
@@ -105,7 +106,7 @@ impl ToolBarPanel {
 
                         ui.vertical_centered_justified(|ui| {
                             create_add_remove_group!(
-                                ui, response, Add, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096
+                                ui, response, Add, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096
                             );
                         });
                     })
@@ -119,6 +120,14 @@ impl ToolBarPanel {
                     })
                     .response
                     .on_hover_text("Removes N fields");
+
+                    ui.menu_button("Insert", |ui| {
+                        ui.set_width(64.);
+
+                        create_add_remove_group!(ui, response, Insert, 1, 2, 4, 16, 64, 256, 1024);
+                    })
+                    .response
+                    .on_hover_text("Inserts N bytes");
 
                     ui.add_space(2.);
                     ui.separator();
