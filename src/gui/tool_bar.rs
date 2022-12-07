@@ -214,17 +214,16 @@ impl ToolBarPanel {
             .as_ref()
             .map(|p| (p.name(), p.id()))
         {
-            if let Some(name) = proc_name {
-                #[cfg(unix)]
-                let text = format!("Status: Attached to {} - {}", name, proc_id);
-                #[cfg(windows)]
-                let text = format!("Status: Attached to {} - 0x{:X}", name, proc_id);
-
-                ui.label(text);
-            } else {
-                *response = Some(ToolBarResponse::ProcessDetach);
-            }
-        } else {
+            match proc_name {
+                Ok(name) => _ = ui.label(format!("Status: Attached to {} - {}", name, proc_id)),
+                Err(e) => {
+                    self.state
+                        .borrow_mut()
+                        .toasts
+                        .error(format!("Failed to get process name: {e}"));
+                    *response = Some(ToolBarResponse::ProcessDetach);
+                }
+            };
             ui.label("Status: Detached");
         }
     }

@@ -151,9 +151,16 @@ impl App for YClassApp {
                     Ok(proc) => {
                         frame.set_window_title(&format!("YClass - Attached to {pid}"));
                         if let Process::Internal((op, _)) = &proc {
-                            if let Some(name) = op.name() {
-                                state.config.last_attached_process_name = Some(name);
-                                state.config.save();
+                            match op.name() {
+                                Ok(name) => {
+                                    state.config.last_attached_process_name = Some(name);
+                                    state.config.save();
+                                }
+                                Err(e) => {
+                                    _ = state
+                                        .toasts
+                                        .error(format!("Failed to get process name: {e}"))
+                                }
                             }
                         }
 
