@@ -9,6 +9,7 @@ use eframe::{
     egui::{collapsing_header::CollapsingState, CentralPanel, Context, Id, ScrollArea, Ui},
     epaint::FontId,
 };
+use fastrand::Rng;
 
 pub struct InspectorPanel {
     pub selection: Option<Selection>,
@@ -86,13 +87,18 @@ impl InspectorPanel {
 
     fn inspect(&mut self, ui: &mut Ui) -> Option<()> {
         let state = &mut *self.state.borrow_mut();
+        let rng = Rng::with_seed(0);
+
         let mut ctx = InspectionContext {
             current_container: state.class_list.selected()?,
             process: state.process.as_ref()?,
             class_list: &state.class_list,
             toasts: &mut state.toasts,
             selection: self.selection,
+            current_id: Id::new(0),
             address: self.address,
+            parent_id: Id::new(0),
+            level_rng: &rng,
             offset: 0,
         };
 
@@ -104,11 +110,10 @@ impl InspectorPanel {
             .auto_shrink([false, false])
             .enable_scrolling(self.allow_scroll)
             .show(ui, |ui| {
-                match class
-                    .fields
-                    .iter()
-                    .fold(None, |r, f| r.or(f.draw(ui, &mut ctx)))
-                {
+                match class.fields.iter().fold(None, |r, f| {
+                    ctx.current_id = Id::new(rng.u64(..));
+                    r.or(f.draw(ui, &mut ctx))
+                }) {
                     Some(FieldResponse::NewClass(name, id)) => {
                         new_class = Some((name, id));
                     }

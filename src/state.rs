@@ -73,10 +73,6 @@ impl GlobalState {
     }
 
     pub fn open_project(&mut self) -> bool {
-        if !self.class_list.classes().is_empty() && !dbg!(self.dummy) {
-            self.save_project(None);
-        }
-
         if let Some(path) = rfd::FileDialog::new()
             .set_title("Open existing project")
             .add_filter("YClass project", &["yclass"])
@@ -89,6 +85,10 @@ impl GlobalState {
     }
 
     pub fn open_project_path(&mut self, path: &Path) -> bool {
+        if !self.class_list.classes().is_empty() && !self.dummy {
+            self.save_project(None);
+        }
+
         match fs::read_to_string(&path) {
             Ok(data) => {
                 if let Some(pd) = ProjectData::from_str(&data) {

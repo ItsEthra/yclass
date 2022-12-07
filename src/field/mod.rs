@@ -15,7 +15,7 @@ pub use boolean::*;
 
 use crate::{class::Class, context::InspectionContext, generator::Generator, FID_M};
 use eframe::{
-    egui::{TextFormat, Ui},
+    egui::{Id, TextFormat, Ui},
     epaint::{Color32, Stroke},
 };
 use std::cell::{Cell, RefCell};
@@ -59,8 +59,8 @@ impl EditingState {
 
 #[derive(Default)]
 pub struct NamedState {
-    renaming_address: Cell<Option<usize>>,
-    focused_address: Cell<Option<usize>>,
+    renaming_id: Cell<Option<Id>>,
+    focused_id: Cell<Option<Id>>,
     name: RefCell<String>,
     saved_name: RefCell<String>,
     editing_state: RefCell<Option<EditingState>>,

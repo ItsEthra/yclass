@@ -3,11 +3,17 @@ use crate::{
     field::FieldId,
     process::Process,
 };
+use eframe::egui::Id;
 use egui_notify::Toasts;
+use fastrand::Rng;
 
 pub struct InspectionContext<'a> {
     pub selection: Option<Selection>,
     pub current_container: usize,
+
+    pub current_id: Id,
+    pub parent_id: Id,
+    pub level_rng: &'a Rng,
 
     pub address: usize,
     pub offset: usize,

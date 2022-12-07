@@ -5,12 +5,13 @@ use super::{
 use crate::{address::parse_address, context::InspectionContext, generator::Generator, FID_M};
 use eframe::{
     egui::{
-        collapsing_header::CollapsingState, popup_below_widget, Id, Key, Label, RichText, Sense,
+        collapsing_header::CollapsingState, popup_below_widget, Id, Label, RichText, Sense,
         TextFormat, Ui,
     },
     epaint::{text::LayoutJob, Color32},
 };
-use std::cell::Cell;
+use fastrand::Rng;
+use std::{cell::Cell, mem::transmute};
 
 pub struct PointerField {
     id: FieldId,
@@ -56,7 +57,6 @@ impl PointerField {
 
         let is_selected = ctx.is_selected(self.id);
         let paddr = ctx.address + ctx.offset;
-        let uniq_id = ctx.address + ctx.offset + self.id as usize;
 
         ui.add_space(4.);
 
@@ -83,16 +83,6 @@ impl PointerField {
             },
         );
 
-        // let mut job = LayoutJob::default();
-        // job.append(
-        //     &format!(" -> {address:X}"),
-        //     0.,
-        //     create_text_format(is_selected, Color32::YELLOW),
-        // );
-        // if ui.add(Label::new(job).sense(Sense::click())).clicked() {
-        //     ctx.select(self.id);
-        // }
-
         let mut job = LayoutJob::default();
         job.append(
             &text,
@@ -109,12 +99,12 @@ impl PointerField {
 
         let r = ui.add(Label::new(job).sense(Sense::click()));
         if r.secondary_clicked() {
-            ui.memory().toggle_popup(Id::new(uniq_id))
+            ui.memory().toggle_popup(Id::new(ctx.current_id))
         } else if r.clicked() {
             ctx.select(self.id);
         }
 
-        popup_below_widget(ui, Id::new(uniq_id), &r, |ui| {
+        popup_below_widget(ui, Id::new(ctx.current_id), &r, |ui| {
             ui.set_width(80.);
             ui.vertical_centered_justified(|ui| {
                 for cl in ctx.class_list.classes() {
@@ -145,22 +135,27 @@ impl PointerField {
 
         let cid = self.class_id.get()?;
         if let Some(class) = ctx.class_list.by_id(cid) {
+            let rng = Rng::with_seed(unsafe { transmute(ctx.current_id) });
+
             let mut inner_ctx = InspectionContext {
                 class_list: ctx.class_list,
+                parent_id: ctx.current_id,
                 selection: ctx.selection,
                 current_container: cid,
+                // Will be immideately reassigned.
+                current_id: Id::null(),
                 process: ctx.process,
                 toasts: ctx.toasts,
+                level_rng: &rng,
                 offset: 0,
                 address,
             };
 
             #[allow(clippy::single_match)]
-            match class
-                .fields
-                .iter()
-                .fold(None, |r, f| r.or(f.draw(ui, &mut inner_ctx)))
-            {
+            match class.fields.iter().fold(None, |r, f| {
+                inner_ctx.current_id = Id::new(rng.u64(..));
+                r.or(f.draw(ui, &mut inner_ctx))
+            }) {
                 Some(other) => response = Some(other),
                 None => {}
             }
@@ -194,20 +189,11 @@ impl Field for PointerField {
         ctx.process.read(ctx.address + ctx.offset, &mut buf);
         let address = usize::from_ne_bytes(buf);
 
-        let uniq_id = ctx.address + ctx.offset + self.id as usize;
         if self.class_id.get().is_none() {
             self.class_id.set(Some(fastrand::usize(..)));
         }
 
-        let mut state = CollapsingState::load_with_default_open(ui.ctx(), Id::new(uniq_id), false);
-        if ctx.is_selected(self.id)
-            && ui.input().key_pressed(Key::Space)
-            && self.state.renaming_address.get().is_none()
-        // TODO(ItsEthra): questionable line of code ^^
-        {
-            state.toggle(ui);
-        }
-
+        let state = CollapsingState::load_with_default_open(ui.ctx(), ctx.current_id, false);
         let body = state
             .show_header(ui, |ui| self.show_header(ui, ctx, address))
             .body(|ui| self.show_body(ui, ctx, address))
