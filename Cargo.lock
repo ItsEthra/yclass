@@ -975,8 +975,8 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
 name = "memflex"
-version = "0.1.2"
-source = "git+https://github.com/ItsEthra/memflex#88d2445ce998d77f98e05d1603bb630f8d3a9117"
+version = "0.2.0"
+source = "git+https://github.com/ItsEthra/memflex#27d248d73a246c3cec02c44574aca35b54c2a27d"
 dependencies = [
  "bitflags",
  "libc",
