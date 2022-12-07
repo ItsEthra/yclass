@@ -22,12 +22,12 @@ pub struct GlobalState {
 impl Default for GlobalState {
     fn default() -> Self {
         Self {
-            toasts: Toasts::default(),
+            config: YClassConfig::load_or_default(),
+            class_list: ClassList::default(),
             last_opened_project: None,
+            toasts: Toasts::default(),
             process: None,
             dummy: true,
-            class_list: ClassList::default(),
-            config: YClassConfig::load_or_default(),
         }
     }
 }

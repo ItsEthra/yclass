@@ -124,7 +124,9 @@ impl ToolBarPanel {
                     ui.menu_button("Insert", |ui| {
                         ui.set_width(64.);
 
-                        create_add_remove_group!(ui, response, Insert, 1, 2, 4, 16, 64, 256, 1024);
+                        create_add_remove_group!(
+                            ui, response, Insert, 1, 2, 4, 8, 16, 64, 256, 1024
+                        );
                     })
                     .response
                     .on_hover_text("Inserts N bytes");

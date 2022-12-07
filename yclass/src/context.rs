@@ -19,28 +19,28 @@ pub struct InspectionContext<'a> {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Selection {
-    pub address: Option<usize>,
+    pub address: usize,
     pub container_id: ClassId,
     pub field_id: FieldId,
 }
 
 impl InspectionContext<'_> {
     pub fn select(&mut self, field_id: FieldId) {
-        self.selection = Some(Selection {
-            address: Some(self.address + self.offset),
-            container_id: self.current_container,
-            field_id,
-        });
+        if self.is_selected(field_id) {
+            self.selection = None;
+        } else {
+            self.selection = Some(Selection {
+                container_id: self.current_container,
+                address: self.address + self.offset,
+                field_id,
+            });
+        }
     }
 
     pub fn is_selected(&self, field_id: FieldId) -> bool {
         self.selection
             .as_ref()
-            .map(|s| {
-                s.address
-                    .map(|addr| addr == self.address + self.offset)
-                    .unwrap_or(false)
-            })
+            .map(|s| s.address == self.address + self.offset)
             .unwrap_or(false)
             && self
                 .selection

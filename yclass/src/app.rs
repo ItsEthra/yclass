@@ -1,4 +1,6 @@
 use crate::{
+    context::Selection,
+    field::allocate_padding,
     gui::{ClassListPanel, InspectorPanel, ToolBarPanel, ToolBarResponse},
     process::Process,
     state::StateRef,
@@ -33,17 +35,110 @@ impl App for YClassApp {
         });
 
         match self.tool_bar.show(ctx) {
-            Some(ToolBarResponse::Add(_n)) => {
-                todo!()
+            Some(ToolBarResponse::Add(n)) => {
+                let state = &mut *self.state.borrow_mut();
+
+                if let Some(cid) = self
+                    .inspector
+                    .selection
+                    .map(|s| s.container_id)
+                    .or_else(|| state.class_list.selected())
+                {
+                    let class = state.class_list.by_id_mut(cid).unwrap();
+                    class.fields.extend(allocate_padding(n));
+                }
             }
-            Some(ToolBarResponse::Remove(_n)) => {
-                todo!()
+            Some(ToolBarResponse::Remove(n)) => {
+                if let Some(Selection {
+                    container_id,
+                    field_id,
+                    ..
+                }) = self.inspector.selection
+                {
+                    let state = &mut *self.state.borrow_mut();
+
+                    let class = state.class_list.by_id_mut(container_id).unwrap();
+                    let pos = class
+                        .fields
+                        .iter()
+                        .position(|f| f.id() == field_id)
+                        .unwrap();
+
+                    let from = pos.min(class.fields.len());
+                    let to = (pos + n).min(class.fields.len());
+
+                    class.fields.drain(from..to);
+                }
             }
-            Some(ToolBarResponse::Insert(_n)) => {
-                todo!()
+            Some(ToolBarResponse::Insert(n)) => {
+                if let Some(Selection {
+                    container_id,
+                    field_id,
+                    ..
+                }) = self.inspector.selection
+                {
+                    let state = &mut *self.state.borrow_mut();
+
+                    let class = state.class_list.by_id_mut(container_id).unwrap();
+                    let pos = class
+                        .fields
+                        .iter()
+                        .position(|f| f.id() == field_id)
+                        .unwrap();
+                    let mut padding = allocate_padding(n);
+
+                    while let Some(field) = padding.pop() {
+                        class.fields.insert(pos, field);
+                    }
+                }
             }
-            Some(ToolBarResponse::ChangeKind(_new)) => {
-                todo!()
+            Some(ToolBarResponse::ChangeKind(new)) => {
+                if let Some(Selection {
+                    container_id,
+                    field_id,
+                    ..
+                }) = self.inspector.selection
+                {
+                    let state = &mut *self.state.borrow_mut();
+
+                    let class = state.class_list.by_id_mut(container_id).unwrap();
+                    let pos = class
+                        .fields
+                        .iter()
+                        .position(|f| f.id() == field_id)
+                        .unwrap();
+
+                    let (old_size, old_name) = (class.fields[pos].size(), class.fields[pos].name());
+                    if old_size > new.size() {
+                        let mut padding = allocate_padding(old_size - new.size());
+                        class.fields[pos] = new.into_field(old_name);
+                        while let Some(pad) = padding.pop() {
+                            class.fields.insert(pos + 1, pad);
+                        }
+
+                        self.inspector.selection.as_mut().unwrap().field_id =
+                            class.fields[pos].id();
+                    } else {
+                        let mut steal_size = 0;
+                        while steal_size < new.size() {
+                            if class.fields.len() <= pos {
+                                break;
+                            }
+
+                            steal_size += class.fields.remove(pos).size();
+                        }
+
+                        let mut padding = allocate_padding(steal_size - new.size());
+                        class.fields.insert(pos, new.into_field(old_name));
+
+                        while let Some(pad) = padding.pop() {
+                            class.fields.insert(pos + 1, pad);
+                        }
+
+                        self.inspector.selection.as_mut().unwrap().field_id =
+                            class.fields[pos].id();
+                    }
+                }
             }
             Some(ToolBarResponse::ProcessDetach) => {
                 self.state.borrow_mut().process = None;
@@ -51,6 +146,7 @@ impl App for YClassApp {
             }
             Some(ToolBarResponse::ProcessAttach(pid)) => {
                 let state = &mut *self.state.borrow_mut();
+
                 match Process::attach(pid, &state.config) {
                     Ok(proc) => {
                         frame.set_window_title(&format!("YClass - Attached to {pid}"));

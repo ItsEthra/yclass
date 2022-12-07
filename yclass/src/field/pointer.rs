@@ -164,6 +164,7 @@ impl PointerField {
                 Some(other) => response = Some(other),
                 None => {}
             }
+
             ctx.selection = inner_ctx.selection;
         } else {
             response = Some(FieldResponse::NewClass(format!("C{:X}", address), cid));
