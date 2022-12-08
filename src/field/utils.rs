@@ -21,6 +21,7 @@ pub fn display_field_prelude(
 
         if egui_ctx.input().key_pressed(Key::C)
             && egui_ctx.input().modifiers.matches(Modifiers::CTRL)
+            && ctx.is_selected(field.id())
         {
             egui_ctx.output().copied_text = format!("{:X}", ctx.address + ctx.offset);
         }
@@ -30,6 +31,7 @@ pub fn display_field_prelude(
                 .input()
                 .modifiers
                 .matches(Modifiers::CTRL | Modifiers::SHIFT)
+            && ctx.is_selected(field.id())
         {
             let mut buf = [0; 8];
             ctx.process.read(ctx.address + ctx.offset, &mut buf[..]);
