@@ -42,7 +42,16 @@ impl InspectorPanel {
                 ui.style_mut().override_font_id = Some(FontId::monospace(18.));
 
                 let state = self.state.borrow();
-                if state.process.is_none() || state.class_list.selected_class().is_none() {
+                if state.process.is_none() {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Attach to a process to begin inspection.");
+                    });
+                    return;
+                }
+                if state.class_list.selected_class().is_none() {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Select a class from the class list to begin inspection.");
+                    });
                     return;
                 }
                 drop(state);
@@ -107,7 +116,8 @@ impl InspectorPanel {
         let mut new_class = None;
         #[allow(clippy::single_match)]
         ScrollArea::vertical()
-            .auto_shrink([false, false])
+            .auto_shrink([false, true])
+            .hscroll(true)
             .enable_scrolling(self.allow_scroll)
             .show(ui, |ui| {
                 match class.fields.iter().fold(None, |r, f| {
