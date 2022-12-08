@@ -1,6 +1,8 @@
 //! I feel like everything what's written in this file is very very scuffed
 
-use crate::{address::parse_address, field::FieldKind, process::Process, state::StateRef};
+use crate::{
+    address::parse_address, field::FieldKind, process::Process, state::StateRef, value::Value,
+};
 use eframe::egui::{ComboBox, Context, TextEdit, Ui, Window};
 use std::rc::Rc;
 
@@ -8,8 +10,14 @@ use std::rc::Rc;
 struct SearchResult {
     parent_offsets: Rc<Vec<usize>>,
     base_address: usize,
-    last_value: [u8; 8],
+    last_value: Value,
     offset: usize,
+}
+
+impl SearchResult {
+    fn should_remain(&self, proc: &Process, new_base_address: usize, new_value: Value) -> bool {
+        true
+    }
 }
 
 #[derive(PartialEq, Clone, Copy)]
@@ -40,8 +48,7 @@ impl FilterMode {
 struct SearchOptions {
     base_address: usize,
     alignment: usize,
-    // This way is kinda nasty but the easiest so far.
-    value: [Option<u8>; 8],
+    value: Value,
     offsets: Rc<Vec<usize>>,
     level: usize,
     struct_size: usize,
@@ -143,31 +150,39 @@ impl SpiderWindow {
                 ui.separator();
 
                 if self.results.is_empty() {
-                    let inner: eyre::Result<()> = ui.horizontal(|ui| {
-                        if ui.button("Initial search").clicked() {
-                            let opts = SearchOptions {
-                                offsets: Rc::default(),
-                                base_address: parse_address(&self.base_address)
-                                    .ok_or(eyre::eyre!("Address is in invalid format"))?,
-                                alignment: self.alignment.parse::<usize>().map_err(|_| {
-                                    eyre::eyre!("Alignment value is in invalid format")
-                                })?,
-                                value: parse_kind_to_opt_array(self.kind, &self.value)
-                                    .map_err(|_| eyre::eyre!("Value is in invalid format"))?,
-                                level: self.max_levels.parse::<usize>().map_err(|_| {
-                                    eyre::eyre!("Max levels value is in invalid format")
-                                })?,
-                                struct_size: self.struct_size.parse::<usize>().map_err(|_| {
-                                    eyre::eyre!("Structure size value is in invalid format")
-                                })?,
-                            };
+                    let inner: eyre::Result<()> = ui
+                        .horizontal(|ui| {
+                            if ui.button("Initial search").clicked() {
+                                let opts = SearchOptions {
+                                    offsets: Rc::default(),
+                                    base_address: parse_address(&self.base_address)
+                                        .ok_or(eyre::eyre!("Address is in invalid format"))?,
+                                    alignment: self.alignment.parse::<usize>().map_err(|_| {
+                                        eyre::eyre!("Alignment value is in invalid format")
+                                    })?,
+                                    value: parse_kind_to_value(self.kind, &self.value)
+                                        .map_err(|_| eyre::eyre!("Value is in invalid format"))?,
+                                    level: self.max_levels.parse::<usize>().map_err(|_| {
+                                        eyre::eyre!("Max levels value is in invalid format")
+                                    })?,
+                                    struct_size: self.struct_size.parse::<usize>().map_err(
+                                        |_| {
+                                            eyre::eyre!("Structure size value is in invalid format")
+                                        },
+                                    )?,
+                                };
 
-                            recursive_first_search(process, &mut self.results, opts.base_address, &opts);
-                        }
+                                recursive_first_search(
+                                    process,
+                                    &mut self.results,
+                                    opts.base_address,
+                                    &opts,
+                                );
+                            }
 
-                        Ok(())
-                    })
-                    .inner;
+                            Ok(())
+                        })
+                        .inner;
 
                     _ = inner?;
                 }
@@ -188,15 +203,27 @@ impl SpiderWindow {
                             }
                         });
 
-                    ui.horizontal(|ui| {
+                    let inner: eyre::Result<()> = ui.horizontal(|ui| {
                         if ui.button("Next search").clicked() {
+                            let new_base_address = parse_address(&self.base_address)
+                                .ok_or(eyre::eyre!("Address is in invalid format"))?;
+                            let new_value = parse_kind_to_value(self.kind, &self.value)
+                                .map_err(|_| eyre::eyre!("Value is in invalid format"))?;
 
+                            self.results.retain_mut(|sr| {
+                                sr.should_remain(process, new_base_address, new_value)
+                            });
                         }
 
                         if ui.button("Clear").clicked() {
                             self.results.clear();
                         }
-                    });
+
+                        Ok(())
+                    })
+                    .inner;
+
+                    _ = inner?;
                 }
 
                 ui.separator();
@@ -227,11 +254,11 @@ fn recursive_first_search(
         };
 
     for addr in (slot..(slot + opts.struct_size)).step_by(opts.alignment) {
-        let mut value = [0; 8];
-        process.read(addr, &mut value[..]);
+        let mut data = [0; 8];
+        process.read(addr, &mut data[..]);
 
         if addr % 8 == 0 {
-            let ptr = usize::from_ne_bytes(value);
+            let ptr = usize::from_ne_bytes(data);
             if process.can_read(ptr) {
                 let mut new_offsets = (*opts.offsets).clone();
                 new_offsets.push(addr - slot);
@@ -252,7 +279,8 @@ fn recursive_first_search(
             }
         }
 
-        if value_matches(&value, &opts.value) {
+        let value = bytes_to_value(&data, opts.value.kind());
+        if value == opts.value {
             results.push(SearchResult {
                 parent_offsets: opts.offsets.clone(),
                 base_address: opts.base_address,
@@ -263,39 +291,46 @@ fn recursive_first_search(
     }
 }
 
-fn value_matches(value: &[u8; 8], mask: &[Option<u8>; 8]) -> bool {
-    value
-        .iter()
-        .zip(mask)
-        .all(|(a, b)| b.map(|b| b == *a).unwrap_or(true))
+fn bytes_to_value(arr: &[u8; 8], kind: FieldKind) -> Value {
+    macro_rules! into_value {
+        ($s:ident, $type:ty) => {
+            <$type>::from_ne_bytes(arr[..std::mem::size_of::<$type>()].try_into().unwrap()).into()
+        };
+    }
+
+    match kind {
+        FieldKind::I8 => into_value!(s, i8),
+        FieldKind::I16 => into_value!(s, i16),
+        FieldKind::I32 => into_value!(s, i32),
+        FieldKind::I64 => into_value!(s, i64),
+        FieldKind::U8 => into_value!(s, u8),
+        FieldKind::U16 => into_value!(s, u16),
+        FieldKind::U32 => into_value!(s, u32),
+        FieldKind::U64 => into_value!(s, u64),
+        FieldKind::F32 => into_value!(s, f32),
+        FieldKind::F64 => into_value!(s, f64),
+        _ => unreachable!(),
+    }
 }
 
-fn parse_kind_to_opt_array(kind: FieldKind, s: &str) -> eyre::Result<[Option<u8>; 8]> {
-    macro_rules! value_opt_array {
+fn parse_kind_to_value(kind: FieldKind, s: &str) -> eyre::Result<Value> {
+    macro_rules! into_value {
         ($s:ident, $type:ty) => {
-            $s.parse::<$type>()?
-                .to_ne_bytes()
-                .into_iter()
-                .map(|b| Some(b))
-                .chain([None; 8 - std::mem::size_of::<$type>()])
-                .collect::<Vec<_>>()
-                .as_slice()
-                .try_into()
-                .unwrap()
+            $s.parse::<$type>()?.into()
         };
     }
 
     Ok(match kind {
-        FieldKind::I8 => value_opt_array!(s, i8),
-        FieldKind::I16 => value_opt_array!(s, i16),
-        FieldKind::I32 => value_opt_array!(s, i32),
-        FieldKind::I64 => value_opt_array!(s, i64),
-        FieldKind::U8 => value_opt_array!(s, u8),
-        FieldKind::U16 => value_opt_array!(s, u16),
-        FieldKind::U32 => value_opt_array!(s, u32),
-        FieldKind::U64 => value_opt_array!(s, u64),
-        FieldKind::F32 => value_opt_array!(s, f32),
-        FieldKind::F64 => value_opt_array!(s, f64),
+        FieldKind::I8 => into_value!(s, i8),
+        FieldKind::I16 => into_value!(s, i16),
+        FieldKind::I32 => into_value!(s, i32),
+        FieldKind::I64 => into_value!(s, i64),
+        FieldKind::U8 => into_value!(s, u8),
+        FieldKind::U16 => into_value!(s, u16),
+        FieldKind::U32 => into_value!(s, u32),
+        FieldKind::U64 => into_value!(s, u64),
+        FieldKind::F32 => into_value!(s, f32),
+        FieldKind::F64 => into_value!(s, f64),
         _ => unreachable!(),
     })
 }
