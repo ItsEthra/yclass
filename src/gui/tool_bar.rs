@@ -1,4 +1,4 @@
-use super::{GeneratorWindow, ProcessAttachWindow};
+use super::{GeneratorWindow, ProcessAttachWindow, SpiderWindow};
 use crate::{class::ClassList, field::FieldKind, state::StateRef};
 use eframe::{
     egui::{style::Margin, Button, Context, Frame, RichText, TopBottomPanel, Ui},
@@ -35,6 +35,7 @@ pub enum ToolBarResponse {
 pub struct ToolBarPanel {
     ps_attach_window: ProcessAttachWindow,
     generator_window: GeneratorWindow,
+    spider_window: SpiderWindow,
     state: StateRef,
 }
 
@@ -44,6 +45,7 @@ impl ToolBarPanel {
             state,
             ps_attach_window: ProcessAttachWindow::new(state),
             generator_window: GeneratorWindow::new(state),
+            spider_window: SpiderWindow::new(state),
         }
     }
 
@@ -56,6 +58,9 @@ impl ToolBarPanel {
         }
 
         self.generator_window.show(ctx);
+        if let Err(e) = self.spider_window.show(ctx) {
+            self.state.borrow_mut().toasts.error(e.to_string());
+        }
 
         let style = ctx.style();
         let frame = Frame {
@@ -78,6 +83,10 @@ impl ToolBarPanel {
 
                     if ui.button("Generator").clicked() {
                         self.generator_window.toggle();
+                    }
+
+                    if ui.button("Spider").clicked() {
+                        self.spider_window.toggle();
                     }
 
                     ui.add_space(4.);

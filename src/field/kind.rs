@@ -13,6 +13,21 @@ pub enum FieldKind {
 }
 
 impl FieldKind {
+    pub const NAMED_VARIANTS: &[(FieldKind, &'static str)] = &[
+        (Self::I8, "I8"),
+        (Self::I16, "I16"),
+        (Self::I32, "I32"),
+        (Self::I64, "I64"),
+        (Self::U8, "U8"),
+        (Self::U16, "U16"),
+        (Self::U32, "U32"),
+        (Self::U64, "U64"),
+        (Self::F32, "F32"),
+        (Self::F64, "F64"),
+    ];
+}
+
+impl FieldKind {
     /// Returns size in bytes.
     pub fn size(&self) -> usize {
         match self {

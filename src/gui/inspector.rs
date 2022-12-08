@@ -124,15 +124,12 @@ impl InspectorPanel {
                     ctx.current_id = Id::new(rng.u64(..));
                     r.or(f.draw(ui, &mut ctx))
                 }) {
-                    Some(FieldResponse::NewClass(name, id)) => {
-                        new_class = Some((name, id));
-                    }
+                    Some(FieldResponse::NewClass(name, id)) => new_class = Some((name, id)),
                     Some(FieldResponse::LockScroll) => self.allow_scroll = false,
                     Some(FieldResponse::UnlockScroll) => self.allow_scroll = true,
                     None => {}
                 }
-            })
-            .inner;
+            });
         self.selection = ctx.selection;
 
         if let Some((name, id)) = new_class {
