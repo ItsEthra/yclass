@@ -203,25 +203,26 @@ impl SpiderWindow {
                             }
                         });
 
-                    let inner: eyre::Result<()> = ui.horizontal(|ui| {
-                        if ui.button("Next search").clicked() {
-                            let new_base_address = parse_address(&self.base_address)
-                                .ok_or(eyre::eyre!("Address is in invalid format"))?;
-                            let new_value = parse_kind_to_value(self.kind, &self.value)
-                                .map_err(|_| eyre::eyre!("Value is in invalid format"))?;
+                    let inner: eyre::Result<()> = ui
+                        .horizontal(|ui| {
+                            if ui.button("Next search").clicked() {
+                                let new_base_address = parse_address(&self.base_address)
+                                    .ok_or(eyre::eyre!("Address is in invalid format"))?;
+                                let new_value = parse_kind_to_value(self.kind, &self.value)
+                                    .map_err(|_| eyre::eyre!("Value is in invalid format"))?;
 
-                            self.results.retain_mut(|sr| {
-                                sr.should_remain(process, new_base_address, new_value)
-                            });
-                        }
+                                self.results.retain_mut(|sr| {
+                                    sr.should_remain(process, new_base_address, new_value)
+                                });
+                            }
 
-                        if ui.button("Clear").clicked() {
-                            self.results.clear();
-                        }
+                            if ui.button("Clear").clicked() {
+                                self.results.clear();
+                            }
 
-                        Ok(())
-                    })
-                    .inner;
+                            Ok(())
+                        })
+                        .inner;
 
                     _ = inner?;
                 }
