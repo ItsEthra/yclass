@@ -28,7 +28,7 @@ use state::GlobalState;
 use std::cell::RefCell;
 
 /// Monospaced font id.
-const FID_M: FontId = FontId::monospace(20.);
+const FID_M: FontId = FontId::monospace(16.);
 
 fn main() {
     eframe::run_native(
