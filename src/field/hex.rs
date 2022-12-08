@@ -6,28 +6,31 @@ use eframe::{
     egui::{Label, ScrollArea, Sense, Ui},
     epaint::{text::LayoutJob, Color32},
 };
-use std::{
-    cell::RefCell,
-    iter::repeat_with,
-    ops::{Range, RangeFrom},
-};
+use once_cell::unsync::Lazy;
+use std::{cell::RefCell, iter::repeat_with, ops::RangeFrom};
 
 struct PreviewState {
     address: usize,
     hover_time: f32,
     shown: bool,
-    children: Vec<Box<dyn Field>>,
+    offest: usize,
+}
+
+thread_local! {
+    static PREVIEW_FIELDS: Lazy<Vec<Box<dyn Field>>> = Lazy::new(|| {
+        repeat_with(|| Box::new(HexField::<8>::new()) as Box<dyn Field>)
+            .take(20)
+            .collect()
+    });
 }
 
 impl PreviewState {
     fn new(address: usize) -> Self {
         Self {
+            offest: 0,
             address,
             hover_time: 0.,
             shown: false,
-            children: repeat_with(|| Box::new(HexField::<8>::new()) as Box<dyn Field>)
-                .take(20)
-                .collect(),
         }
     }
 }
@@ -174,43 +177,24 @@ impl<const N: usize> HexField<N> {
                         } else {
                             let yd = ui.input().scroll_delta.y;
                             if yd < 0. {
-                                preview
-                                    .children
-                                    .push(Box::new(HexField::<8>::new()) as Box<dyn Field>);
+                                preview.offest = preview.offest.saturating_add(8);
                             } else if yd > 0. {
-                                preview.children.pop();
+                                preview.offest = preview.offest.saturating_sub(8);
                             }
 
                             r.on_hover_ui(|ui| {
                                 let saved = (ctx.address, ctx.offset);
                                 ctx.address = address;
-                                ctx.offset = 0;
+                                ctx.offset = preview.offest;
 
                                 ScrollArea::vertical()
                                     .stick_to_bottom(true)
                                     .hscroll(false)
-                                    .show_rows(
-                                        ui,
-                                        20.,
-                                        preview.children.len(),
-                                        |ui, Range { start, end }| {
-                                            let (start, end) = (start.min(end), start.max(end));
-
-                                            ctx.offset += preview
-                                                .children
-                                                .iter()
-                                                .take(start)
-                                                .map(|c| c.size())
-                                                .sum::<usize>();
-
-                                            preview
-                                                .children
-                                                .iter()
-                                                .skip(start)
-                                                .take(end - start)
-                                                .for_each(|child| _ = child.draw(ui, ctx));
-                                        },
-                                    );
+                                    .show(ui, |ui| {
+                                        PREVIEW_FIELDS.with(|fields| {
+                                            fields.iter().for_each(|f| _ = f.draw(ui, ctx));
+                                        });
+                                    });
 
                                 (ctx.address, ctx.offset) = saved;
                             });
