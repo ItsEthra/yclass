@@ -6,7 +6,7 @@ use crate::{
     state::StateRef,
 };
 use eframe::{egui::Context, epaint::Color32, App, Frame};
-use std::sync::Once;
+use std::{sync::Once, time::Duration};
 
 pub struct YClassApp {
     class_list: ClassListPanel,
@@ -28,6 +28,8 @@ impl YClassApp {
 
 impl App for YClassApp {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+        ctx.request_repaint_after(Duration::from_millis(100));
+
         static DPI_INIT: Once = Once::new();
         DPI_INIT.call_once(|| {
             let dpi = self.state.borrow().config.dpi.unwrap_or(1.);
