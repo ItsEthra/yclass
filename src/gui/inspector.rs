@@ -125,9 +125,6 @@ impl InspectorPanel {
             .inner;
         self.selection = ctx.selection;
 
-        // Do not save `changes` in order to avoid applying changes in different frame other than
-        // when requested.
-
         if let Some((name, id)) = new_class {
             state.class_list.add_class_with_id(name, id);
         }

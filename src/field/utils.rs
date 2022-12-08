@@ -1,18 +1,39 @@
-use std::fmt::Display;
-
 use super::{create_text_format, EditingState, Field, HexField, NamedState};
 use crate::{app::is_valid_ident, context::InspectionContext, FID_M};
 use eframe::{
-    egui::{FontSelection, Label, Sense, TextEdit, Ui},
+    egui::{Context, FontSelection, Key, Label, Modifiers, Sense, TextEdit, Ui},
     epaint::{text::LayoutJob, Color32, Stroke},
 };
+use std::fmt::Display;
 
-pub fn display_field_prelude(field: &dyn Field, ctx: &mut InspectionContext, job: &mut LayoutJob) {
+pub fn display_field_prelude(
+    egui_ctx: &Context,
+    field: &dyn Field,
+    ctx: &mut InspectionContext,
+    job: &mut LayoutJob,
+) {
     job.append(&format!("{:04X}", ctx.offset), 0., {
         let mut tf = create_text_format(ctx.is_selected(field.id()), Color32::KHAKI);
         // Highlight unaligned fields
         if ctx.offset % 8 != 0 {
             tf.underline = Stroke::new(1., Color32::RED);
+        }
+
+        if egui_ctx.input().key_pressed(Key::C)
+            && egui_ctx.input().modifiers.matches(Modifiers::CTRL)
+        {
+            egui_ctx.output().copied_text = format!("{:X}", ctx.address + ctx.offset);
+        }
+
+        if egui_ctx.input().key_pressed(Key::C)
+            && egui_ctx
+                .input()
+                .modifiers
+                .matches(Modifiers::CTRL | Modifiers::SHIFT)
+        {
+            let mut buf = [0; 8];
+            ctx.process.read(ctx.address + ctx.offset, &mut buf[..]);
+            egui_ctx.output().copied_text = format!("{:X}", usize::from_ne_bytes(buf));
         }
 
         tf

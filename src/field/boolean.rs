@@ -43,7 +43,7 @@ impl Field for BoolField {
 
         ui.horizontal(|ui| {
             let mut job = LayoutJob::default();
-            display_field_prelude(self, ctx, &mut job);
+            display_field_prelude(ui.ctx(), self, ctx, &mut job);
 
             if ui.add(Label::new(job).sense(Sense::click())).clicked() {
                 ctx.select(self.id);
