@@ -23,6 +23,10 @@ cargo r --release
 * Plugin API to customize reading behavior.
 * Preview of the memory pointer is pointing to.
 
+# Hotkeys
+* `Ctrl-C` - Copies selected field's address (in hex) to the clipboard.
+* `Ctrl-Shift-C` - Copies selected field's value as 8 byte (in hex) to the clipboard.
+
 # Planned features
 * [x] - ~~Writing values.~~
 * [x] - ~~Save/Open project files.~~
