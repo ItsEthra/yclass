@@ -2,8 +2,12 @@ use super::{TextEditBind, TextEditFromStrBind};
 use crate::{
     address::parse_address, field::FieldKind, process::Process, state::StateRef, value::Value,
 };
-use eframe::egui::{ComboBox, Context, TextEdit, Ui, Window};
-use std::rc::Rc;
+use eframe::{
+    egui::{ComboBox, Context, TextEdit, Ui, Window},
+    epaint::FontId,
+};
+use egui_extras::{Column, TableBuilder};
+use std::{iter::repeat, rc::Rc};
 
 #[derive(PartialEq, Clone, Copy)]
 enum FilterMode {
@@ -37,6 +41,13 @@ impl FilterMode {
         (Self::Changed, "Changed"),
         (Self::Unchanged, "Unchanged"),
     ];
+
+    fn label(&self) -> &'static str {
+        Self::NAMED_VARIANTS
+            .iter()
+            .find_map(|(v, s)| if v == self { Some(*s) } else { None })
+            .unwrap()
+    }
 }
 
 struct SearchOptions {
@@ -61,6 +72,7 @@ pub struct SpiderWindow {
     value_buf: String,
 
     results: Vec<SearchResult>,
+    filter: FilterMode,
 }
 
 impl SpiderWindow {
@@ -74,6 +86,7 @@ impl SpiderWindow {
             base_address: TextEditBind::new(|s| parse_address(s).ok_or(())),
             value_buf: String::new(),
 
+            filter: FilterMode::Equal,
             results: vec![],
             shown: false,
             state,
@@ -84,37 +97,6 @@ impl SpiderWindow {
         self.shown = !self.shown;
     }
 
-    fn collect_options(&self) -> eyre::Result<SearchOptions> {
-        macro_rules! annotated {
-            ($field:ident, $label:literal) => {
-                self.$field
-                    .value_clone()
-                    .map(|v| v.map_err(|e| eyre::eyre!("{}: {e}", $label)))
-                    .ok_or(eyre::eyre!(concat!($label, " is required")))??
-            };
-        }
-
-        let depth = annotated!(max_levels, "Max level");
-        let alignment = annotated!(alignment, "Alignment");
-        let struct_size = annotated!(struct_size, "Struct size");
-        let address = self
-            .base_address
-            .value_clone()
-            .map(|v| v.map_err(|_| eyre::eyre!("Base adderss is in invalid format")))
-            .ok_or(eyre::eyre!("Base address is required"))??;
-
-        let value = parse_kind_to_value(self.field_kind, &self.value_buf)?;
-
-        Ok(SearchOptions {
-            offsets: Rc::default(),
-            struct_size,
-            alignment,
-            address,
-            depth,
-            value,
-        })
-    }
-
     pub fn show(&mut self, ctx: &Context) -> eyre::Result<Option<()>> {
         let shown = unsafe { &mut (*(self as *mut Self)).shown };
 
@@ -122,6 +104,7 @@ impl SpiderWindow {
             .open(shown)
             .show(ctx, |ui| {
                 let state = &mut *self.state.borrow_mut();
+
                 let Some(process) = state.process.as_ref() else {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Attach to a process first");
@@ -182,9 +165,29 @@ impl SpiderWindow {
                     if ui.button("First search").clicked() {
                         let opts = self.collect_options()?;
                         recursive_first_search(process, &mut self.results, &opts);
-                        dbg!(self.results.as_slice());
                     }
                 } else {
+                    ComboBox::new("_spider_filter_box", "Filter")
+                        .selected_text(self.filter.label())
+                        .show_ui(ui, |ui| {
+                            for (var, label) in FilterMode::NAMED_VARIANTS {
+                                if ui.selectable_label(*var == self.filter, *label).clicked() {
+                                    self.filter = *var;
+                                }
+                            }
+                        });
+
+                    ui.horizontal(|ui| {
+                        if ui.button("Next search").clicked() {}
+
+                        if ui.button("Clear results").clicked() {
+                            self.results.clear();
+                        }
+                    });
+
+                    ui.separator();
+
+                    self.display_results(process, ui);
                 }
 
                 Ok(())
@@ -192,6 +195,100 @@ impl SpiderWindow {
             .map(|v| v.inner)
             .flatten()
             .transpose()
+    }
+
+    fn display_results(&mut self, process: &Process, ui: &mut Ui) {
+        const DATA_HEIGHT: f32 = 14.;
+        ui.style_mut().override_font_id = Some(FontId::monospace(DATA_HEIGHT));
+
+        let Some(address) = self.base_address
+            .value()
+            .map(|v| v.ok())
+            .flatten()
+            .cloned()
+        else {
+            ui.heading("Invalid base address");
+            return;
+        };
+
+        let levels = *self.max_levels.value().unwrap().unwrap();
+        let w = ui.available_width() / (levels + 2) as f32;
+
+        TableBuilder::new(ui)
+            .striped(true)
+            .columns(Column::initial(w).resizable(true), levels + 1)
+            .column(Column::remainder())
+            .header(16., |mut row| {
+                for i in 1..=levels {
+                    row.col(|ui| _ = ui.label(format!("{i}")));
+                }
+
+                row.col(|ui| _ = ui.label("Last"));
+                row.col(|ui| _ = ui.label("Current"));
+            })
+            .body(|body| {
+                body.rows(DATA_HEIGHT, self.results.len(), |idx, mut row| {
+                    let result = &self.results[idx];
+
+                    for offset in result.parent_offsets.iter() {
+                        row.col(|ui| _ = ui.label(format!("{offset:X}")));
+                    }
+
+                    row.col(|ui| _ = ui.label(format!("{:X}", result.offset)));
+
+                    // Without this, results with shorter offset path look weird.
+                    for _ in repeat("").take(levels - result.parent_offsets.len() - 1) {
+                        row.col(|ui| _ = ui.label(""));
+                    }
+
+                    row.col(|ui| _ = ui.label(format!("{}", result.last_value)));
+
+                    let mut address = address;
+                    let mut buf = [0; 8];
+                    for offset in result.parent_offsets.iter() {
+                        process.read(address + offset, &mut buf[..]);
+                        address = usize::from_ne_bytes(buf);
+                    }
+
+                    process.read(address + result.offset, &mut buf[..]);
+                    address = usize::from_ne_bytes(buf);
+
+                    process.read(address, &mut buf[..]);
+                    let current = bytes_to_value(&buf, result.last_value.kind());
+                    row.col(|ui| _ = ui.label(format!("{}", current)));
+                })
+            })
+    }
+
+    fn collect_options(&self) -> eyre::Result<SearchOptions> {
+        macro_rules! annotated {
+            ($field:ident, $label:literal) => {
+                self.$field
+                    .value_clone()
+                    .map(|v| v.map_err(|e| eyre::eyre!("{}: {e}", $label)))
+                    .ok_or(eyre::eyre!(concat!($label, " is required")))??
+            };
+        }
+
+        let depth = annotated!(max_levels, "Max level");
+        let alignment = annotated!(alignment, "Alignment");
+        let struct_size = annotated!(struct_size, "Struct size");
+        let address = self
+            .base_address
+            .value_clone()
+            .map(|v| v.map_err(|_| eyre::eyre!("Base adderss is in invalid format")))
+            .ok_or(eyre::eyre!("Base address is required"))??;
+
+        let value = parse_kind_to_value(self.field_kind, &self.value_buf)?;
+
+        Ok(SearchOptions {
+            offsets: Rc::default(),
+            struct_size,
+            alignment,
+            address,
+            depth,
+            value,
+        })
     }
 }
 

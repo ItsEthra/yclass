@@ -20,6 +20,10 @@ impl<T, E> TextEditBind<T, E> {
         }
     }
 
+    pub fn value(&self) -> Option<Result<&T, &E>> {
+        self.value.as_ref().map(|v| v.as_ref())
+    }
+
     pub fn new_with(
         buf: impl Into<String>,
         value: Option<T>,
