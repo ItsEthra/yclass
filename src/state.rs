@@ -1,4 +1,7 @@
-use crate::{class::ClassList, config::YClassConfig, process::Process, project::ProjectData};
+use crate::{
+    class::ClassList, config::YClassConfig, hotkeys::HotkeyManager, process::Process,
+    project::ProjectData,
+};
 use egui_notify::Toasts;
 use std::{
     cell::RefCell,
@@ -18,12 +21,14 @@ pub struct GlobalState {
     /// `true` means project was just created and contains no useful
     /// information
     pub dummy: bool,
+    pub hotkeys: HotkeyManager,
 }
 
 impl Default for GlobalState {
     fn default() -> Self {
         Self {
             config: YClassConfig::load_or_default(),
+            hotkeys: HotkeyManager::default(),
             class_list: ClassList::default(),
             last_opened_project: None,
             toasts: Toasts::default(),

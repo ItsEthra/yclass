@@ -14,16 +14,18 @@ mod context;
 mod field;
 mod generator;
 mod gui;
+mod hotkeys;
 mod process;
 mod project;
 mod state;
 
 use config::YClassConfig;
 use eframe::{
-    egui::{FontData, FontDefinitions},
+    egui::{FontData, FontDefinitions, Key, Modifiers},
     epaint::{FontFamily, FontId},
     NativeOptions, Theme,
 };
+use hotkeys::HotkeyManager;
 use state::GlobalState;
 use std::cell::RefCell;
 
@@ -53,9 +55,15 @@ fn main() {
                 .insert(0, "roboto-mono".into());
             cc.egui_ctx.set_fonts(fonts);
 
+            let mut hotkeys = HotkeyManager::default();
+            hotkeys.register("attach_process", Key::A, Modifiers::ALT);
+            hotkeys.register("attach_recent", Key::A, Modifiers::ALT | Modifiers::CTRL);
+            hotkeys.register("detach_process", Key::D, Modifiers::ALT);
+
             Box::new(app::YClassApp::new(Box::leak(Box::new(RefCell::new(
                 GlobalState {
                     config,
+                    hotkeys,
                     ..Default::default()
                 },
             )))))

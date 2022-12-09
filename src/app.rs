@@ -127,24 +127,35 @@ impl App for YClassApp {
                         self.inspector.selection.as_mut().unwrap().field_id =
                             class.fields[pos].id();
                     } else {
-                        let mut steal_size = 0;
+                        let (mut steal_size, mut steal_len) = (0, 0);
                         while steal_size < new.size() {
-                            if class.fields.len() <= pos {
+                            if pos >= class.fields.len() {
                                 break;
                             }
 
-                            steal_size += class.fields.remove(pos).size();
+                            let index = pos + steal_len;
+                            if index >= class.fields.len() {
+                                break;
+                            }
+
+                            steal_size += class.fields[index].size();
+                            steal_len += 1;
                         }
 
-                        let mut padding = allocate_padding(steal_size - new.size());
-                        class.fields.insert(pos, new.into_field(old_name));
+                        if steal_size < new.size() {
+                            state.toasts.error("Not enough space for a new field");
+                        } else {
+                            class.fields.drain(pos..pos + steal_len);
+                            let mut padding = allocate_padding(steal_size - new.size());
+                            class.fields.insert(pos, new.into_field(old_name));
 
-                        while let Some(pad) = padding.pop() {
-                            class.fields.insert(pos + 1, pad);
+                            while let Some(pad) = padding.pop() {
+                                class.fields.insert(pos + 1, pad);
+                            }
+
+                            self.inspector.selection.as_mut().unwrap().field_id =
+                                class.fields[pos].id();
                         }
-
-                        self.inspector.selection.as_mut().unwrap().field_id =
-                            class.fields[pos].id();
                     }
 
                     state.dummy = false;
