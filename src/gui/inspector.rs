@@ -39,7 +39,7 @@ impl InspectorPanel {
     pub fn show(&mut self, ctx: &Context) -> Option<()> {
         CentralPanel::default().show(ctx, |ui| {
             ui.scope(|ui| {
-                ui.style_mut().override_font_id = Some(FontId::monospace(18.));
+                ui.style_mut().override_font_id = Some(FontId::monospace(16.));
 
                 let state = self.state.borrow();
                 if state.process.is_none() {

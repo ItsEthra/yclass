@@ -26,6 +26,9 @@ cargo r --release
 # Hotkeys
 * `Ctrl-C` - Copies selected field's address (in hex) to the clipboard.
 * `Ctrl-Shift-C` - Copies selected field's value as 8 byte (in hex) to the clipboard.
+* `Alt-A` - Open a window to select a process to attach.
+* `Alt-Ctrl-A` - Attach to the most recent process.
+* `Alt-D` - Detach from the process.
 
 # Planned features
 * [x] - ~~Writing values.~~
