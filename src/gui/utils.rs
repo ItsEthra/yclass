@@ -37,6 +37,16 @@ impl<T, E> TextEditBind<T, E> {
     }
 }
 
+impl<T: Clone, E: Clone> TextEditBind<T, E> {
+    pub fn value_clone(&self) -> Option<Result<T, E>> {
+        match self.value.clone() {
+            Some(Ok(v)) => Some(Ok(v)),
+            Some(Err(e)) => Some(Err(e)),
+            None => None,
+        }
+    }
+}
+
 impl<T: FromStr + 'static> TextEditBind<T, T::Err> {
     pub fn new_from_str() -> Self {
         Self {

@@ -14,7 +14,7 @@ enum FilterMode {
     Unchanged,
 }
 
-pub struct SearchResult {}
+struct SearchResult {}
 
 impl FilterMode {
     const NAMED_VARIANTS: &[(Self, &'static str)] = &[
@@ -27,6 +27,14 @@ impl FilterMode {
         (Self::Changed, "Changed"),
         (Self::Unchanged, "Unchanged"),
     ];
+}
+
+struct SearchOptions {
+    struct_size: usize,
+    alignment: usize,
+    address: usize,
+    depth: usize,
+    value: Value,
 }
 
 pub struct SpiderWindow {
@@ -65,9 +73,40 @@ impl SpiderWindow {
         self.shown = !self.shown;
     }
 
-    pub fn show(&mut self, ctx: &Context) -> eyre::Result<()> {
+    fn collect_options(&self) -> eyre::Result<SearchOptions> {
+        macro_rules! annotated {
+            ($field:ident, $label:literal) => {
+                self.$field
+                    .value_clone()
+                    .map(|v| v.map_err(|e| eyre::eyre!("{}: {e}", $label)))
+                    .ok_or(eyre::eyre!(concat!($label, " is required")))??
+            };
+        }
+
+        let depth = annotated!(max_levels, "Max level");
+        let alignment = annotated!(alignment, "Alignment");
+        let struct_size = annotated!(struct_size, "Struct size");
+        let address = self
+            .base_address
+            .value_clone()
+            .map(|v| v.map_err(|_| eyre::eyre!("Base adderss is in invalid format")))
+            .ok_or(eyre::eyre!("Base address is required"))??;
+
+        let value = parse_kind_to_value(self.field_kind, &self.value_buf)?;
+
+        Ok(SearchOptions {
+            depth,
+            alignment,
+            address,
+            struct_size,
+            value,
+        })
+    }
+
+    pub fn show(&mut self, ctx: &Context) -> eyre::Result<Option<()>> {
+        let shown = unsafe { &mut (*(self as *mut Self)).shown };
         Window::new("Structure spider")
-            .open(&mut self.shown)
+            .open(shown)
             .show(ctx, |ui| {
                 fn show_edit<T, E>(
                     enabled: bool,
@@ -118,12 +157,17 @@ impl SpiderWindow {
                 ui.separator();
 
                 if self.results.is_empty() {
-                    ui.button("First search");
+                    if ui.button("First search").clicked() {
+                        let opts = self.collect_options()?;
+                    }
                 } else {
                 }
-            });
 
-        Ok(())
+                eyre::Result::Ok(())
+            })
+            .map(|v| v.inner)
+            .flatten()
+            .transpose()
     }
 }
 
@@ -152,7 +196,9 @@ fn bytes_to_value(arr: &[u8; 8], kind: FieldKind) -> Value {
 fn parse_kind_to_value(kind: FieldKind, s: &str) -> eyre::Result<Value> {
     macro_rules! into_value {
         ($s:ident, $type:ty) => {
-            $s.parse::<$type>()?.into()
+            $s.parse::<$type>()
+                .map_err(|e| eyre::eyre!("Value: {e}"))?
+                .into()
         };
     }
 
