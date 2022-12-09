@@ -1,6 +1,5 @@
-use std::cmp::Ordering;
-
 use crate::field::FieldKind;
+use std::cmp::Ordering;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Value {
