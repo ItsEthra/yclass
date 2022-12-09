@@ -1,6 +1,6 @@
 use crate::{
-    class::ClassList, config::YClassConfig, hotkeys::HotkeyManager, process::Process,
-    project::ProjectData,
+    class::ClassList, config::YClassConfig, context::Selection, hotkeys::HotkeyManager,
+    process::Process, project::ProjectData,
 };
 use egui_notify::Toasts;
 use std::{
@@ -13,27 +13,36 @@ use std::{
 pub type StateRef = &'static RefCell<GlobalState>;
 
 pub struct GlobalState {
-    pub toasts: Toasts,
+    pub last_opened_project: Option<PathBuf>,
+    pub selection: Option<Selection>,
     pub process: Option<Process>,
+    pub hotkeys: HotkeyManager,
+    pub inspect_address: usize,
     pub class_list: ClassList,
     pub config: YClassConfig,
-    pub last_opened_project: Option<PathBuf>,
+    pub toasts: Toasts,
     /// `true` means project was just created and contains no useful
     /// information
     pub dummy: bool,
-    pub hotkeys: HotkeyManager,
 }
 
 impl Default for GlobalState {
     fn default() -> Self {
+        let config = YClassConfig::load_or_default();
+
         Self {
-            config: YClassConfig::load_or_default(),
+            #[cfg(debug_assertions)]
+            inspect_address: config.last_address.unwrap_or(0),
             hotkeys: HotkeyManager::default(),
             class_list: ClassList::default(),
             last_opened_project: None,
             toasts: Toasts::default(),
+            #[cfg(not(debug_assertions))]
+            inspect_address: 0,
+            selection: None,
             process: None,
             dummy: true,
+            config,
         }
     }
 }

@@ -636,6 +636,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui_extras"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1975cd88ff7430f93b29e6b9868b648a8ff6a43b08b9ff8474ee0a648bd8f9a6"
+dependencies = [
+ "egui",
+ "serde",
+]
+
+[[package]]
 name = "egui_glow"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2065,9 +2075,9 @@ dependencies = [
 
 [[package]]
 name = "widestring"
-version = "0.5.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17882f045410753661207383517a6f62ec3dbeb6a4ed2acce01f0728238d1983"
+checksum = "653f141f39ec16bba3c5abe400a0c60da7468261cc2cbf36805022876bc721a8"
 
 [[package]]
 name = "winapi"
@@ -2386,11 +2396,12 @@ checksum = "d2d7d3948613f75c98fd9328cfdcc45acc4d360655289d0a7d4ec931392200a3"
 
 [[package]]
 name = "yclass"
-version = "0.2.0"
+version = "0.1.0"
 dependencies = [
  "dirs",
  "eframe",
  "egui-notify",
+ "egui_extras",
  "eyre",
  "fastrand",
  "libloading",

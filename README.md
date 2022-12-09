@@ -22,6 +22,7 @@ cargo r --release
 * Saving/Opening project files.
 * Plugin API to customize reading behavior.
 * Preview of the memory pointer is pointing to.
+* Structure spider: tool that can search through multilevel pointers for specific values.
 
 # Hotkeys
 * `Ctrl-C` - Copies selected field's address (in hex) to the clipboard.

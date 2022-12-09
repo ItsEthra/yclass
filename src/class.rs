@@ -15,7 +15,7 @@ impl Class {
             id,
             name,
             fields: repeat_with(|| Box::new(HexField::<8>::new()) as Box<dyn Field>)
-                .take(20)
+                .take(10)
                 .collect(),
         }
     }
