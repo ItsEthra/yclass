@@ -1,6 +1,9 @@
 use super::{TextEditBind, TextEditFromStrBind};
-use crate::{address::parse_address, field::FieldKind, state::StateRef, value::Value};
+use crate::{
+    address::parse_address, field::FieldKind, process::Process, state::StateRef, value::Value,
+};
 use eframe::egui::{ComboBox, Context, TextEdit, Ui, Window};
+use std::rc::Rc;
 
 #[derive(PartialEq, Clone, Copy)]
 enum FilterMode {
@@ -14,7 +17,14 @@ enum FilterMode {
     Unchanged,
 }
 
-struct SearchResult {}
+#[derive(Debug)]
+struct SearchResult {
+    // This should optimize memory usage for large amount of offsets,
+    // We aren't modifying them anyways.
+    parent_offsets: Rc<Vec<usize>>,
+    offset: usize,
+    last_value: Value,
+}
 
 impl FilterMode {
     const NAMED_VARIANTS: &[(Self, &'static str)] = &[
@@ -30,6 +40,7 @@ impl FilterMode {
 }
 
 struct SearchOptions {
+    offsets: Rc<Vec<usize>>,
     struct_size: usize,
     alignment: usize,
     address: usize,
@@ -95,19 +106,30 @@ impl SpiderWindow {
         let value = parse_kind_to_value(self.field_kind, &self.value_buf)?;
 
         Ok(SearchOptions {
-            depth,
+            offsets: Rc::default(),
+            struct_size,
             alignment,
             address,
-            struct_size,
+            depth,
             value,
         })
     }
 
     pub fn show(&mut self, ctx: &Context) -> eyre::Result<Option<()>> {
         let shown = unsafe { &mut (*(self as *mut Self)).shown };
+
         Window::new("Structure spider")
             .open(shown)
             .show(ctx, |ui| {
+                let state = &mut *self.state.borrow_mut();
+                let Some(process) = state.process.as_ref() else {
+                    ui.centered_and_justified(|ui| {
+                        ui.heading("Attach to a process first");
+                    });
+
+                    return Ok(());
+                };
+
                 fn show_edit<T, E>(
                     enabled: bool,
                     ui: &mut Ui,
@@ -159,15 +181,70 @@ impl SpiderWindow {
                 if self.results.is_empty() {
                     if ui.button("First search").clicked() {
                         let opts = self.collect_options()?;
+                        recursive_first_search(process, &mut self.results, &opts);
+                        dbg!(self.results.as_slice());
                     }
                 } else {
                 }
 
-                eyre::Result::Ok(())
+                Ok(())
             })
             .map(|v| v.inner)
             .flatten()
             .transpose()
+    }
+}
+
+fn recursive_first_search(
+    process: &Process,
+    results: &mut Vec<SearchResult>,
+    opts: &SearchOptions,
+) {
+    if opts.depth == 0 {
+        return;
+    }
+
+    let start = opts.address
+        + if opts.address % opts.alignment == 0 {
+            0
+        } else {
+            opts.alignment - opts.address % opts.alignment
+        };
+
+    for address in (start..start + opts.struct_size).step_by(opts.alignment) {
+        let mut buf = [0; 8];
+        process.read(address, &mut buf[..]);
+
+        if address % 8 == 0 && process.can_read(usize::from_ne_bytes(buf)) {
+            recursive_first_search(
+                process,
+                results,
+                &SearchOptions {
+                    offsets: Rc::new(
+                        opts.offsets
+                            .iter()
+                            .copied()
+                            .chain([address - start])
+                            .collect(),
+                    ),
+                    address: usize::from_ne_bytes(buf),
+                    struct_size: opts.struct_size,
+                    alignment: opts.alignment,
+                    depth: opts.depth - 1,
+                    value: opts.value,
+                },
+            );
+        }
+
+        let value = bytes_to_value(&buf, opts.value.kind());
+
+        if value == opts.value {
+            results.push(SearchResult {
+                parent_offsets: opts.offsets.clone(),
+                offset: address - start,
+                last_value: value,
+            });
+        }
     }
 }
 
