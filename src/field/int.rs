@@ -98,7 +98,7 @@ impl<const N: usize> Field for IntField<N> {
                 Color32::WHITE,
                 |_| match N {
                     1 if self.signed => (buf[0] as i8).to_string(),
-                    1 if !self.signed => (buf[0] as u8).to_string(),
+                    1 if !self.signed => buf[0].to_string(),
                     2 if self.signed => i16::from_ne_bytes(buf[..].try_into().unwrap()).to_string(),
                     2 if !self.signed => {
                         u16::from_ne_bytes(buf[..].try_into().unwrap()).to_string()

@@ -3,10 +3,12 @@ use std::{ops::Range, str::FromStr};
 
 pub type TextEditFromStrBind<T> = TextEditBind<T, <T as FromStr>::Err>;
 
+type ConvertFnBoxed<T, E> = Box<dyn Fn(&str) -> Result<T, E> + 'static>;
+
 pub struct TextEditBind<T, E> {
     buf: String,
     value: Option<Result<T, E>>,
-    convert: Box<dyn Fn(&str) -> Result<T, E> + 'static>,
+    convert: ConvertFnBoxed<T, E>,
 }
 
 impl<T, E> TextEditBind<T, E> {

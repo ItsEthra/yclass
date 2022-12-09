@@ -103,7 +103,7 @@ impl GlobalState {
             self.save_project(None);
         }
 
-        match fs::read_to_string(&path) {
+        match fs::read_to_string(path) {
             Ok(data) => {
                 if let Some(pd) = ProjectData::from_str(&data) {
                     self.class_list = pd.load();

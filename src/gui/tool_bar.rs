@@ -316,7 +316,7 @@ fn shortcut_button(
 
 fn attach_to_process(state: &mut GlobalState, name: &str, response: &mut Option<ToolBarResponse>) {
     let last_proc = match ProcessIterator::new() {
-        Ok(mut piter) => piter.find(|pe| pe.name.eq_ignore_ascii_case(&name)),
+        Ok(mut piter) => piter.find(|pe| pe.name.eq_ignore_ascii_case(name)),
         Err(e) => {
             state
                 .toasts

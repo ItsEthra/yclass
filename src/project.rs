@@ -151,11 +151,11 @@ impl ProjectData {
         list
     }
 
-    #[allow(clippy::inherent_to_string)]
     pub fn from_str(text: &str) -> Option<Self> {
         ron::from_str(text).ok()
     }
 
+    #[allow(clippy::inherent_to_string)]
     pub fn to_string(&self) -> String {
         ron::to_string(self).unwrap()
     }

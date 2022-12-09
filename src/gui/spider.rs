@@ -261,7 +261,7 @@ impl SpiderWindow {
                             Ok(())
                         })
                         .inner;
-                    _ = inner?;
+                    inner?;
 
                     ui.separator();
 
@@ -270,8 +270,7 @@ impl SpiderWindow {
 
                 Ok(())
             })
-            .map(|v| v.inner)
-            .flatten()
+            .and_then(|v| v.inner)
             .transpose()
     }
 
@@ -281,8 +280,7 @@ impl SpiderWindow {
 
         let Some(address) = self.base_address
             .value()
-            .map(|v| v.ok())
-            .flatten()
+            .and_then(|v| v.ok())
             .cloned()
         else {
             ui.heading("Invalid base address");
