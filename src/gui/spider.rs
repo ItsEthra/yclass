@@ -3,8 +3,8 @@ use crate::{
     address::parse_address, field::FieldKind, process::Process, state::StateRef, value::Value,
 };
 use eframe::{
-    egui::{ComboBox, Context, RichText, TextEdit, Ui, Window},
-    epaint::{Color32, FontId},
+    egui::{Button, ComboBox, Context, RichText, TextEdit, Ui, Window},
+    epaint::{vec2, Color32, FontId},
 };
 use egui_extras::{Column, TableBuilder};
 use std::{iter::repeat, rc::Rc};
@@ -203,13 +203,20 @@ impl SpiderWindow {
                 show_edit(true, ui, &mut self.base_address, "Base address");
                 ui.horizontal(|ui| {
                     ui.add(TextEdit::singleline(&mut self.value_buf).desired_width(w));
-                    ui.label("Value");
+                    if self.results.is_empty() {
+                        ui.label("Initial value");
+                    } else {
+                        ui.label("Filter value");
+                    }
                 });
 
                 ui.separator();
 
                 if self.results.is_empty() {
-                    if ui.button("First search").clicked() {
+                    if ui
+                        .add_sized(vec2(w + 8., 12.), Button::new("First search"))
+                        .clicked()
+                    {
                         let opts = self.collect_options()?;
                         recursive_first_search(process, &mut self.results, &opts);
                     }
@@ -246,6 +253,10 @@ impl SpiderWindow {
                             if ui.button("Clear results").clicked() {
                                 self.results.clear();
                             }
+
+                            ui.separator();
+
+                            ui.label(format!("Total count: {}", self.results.len()));
 
                             Ok(())
                         })
@@ -290,7 +301,7 @@ impl SpiderWindow {
                     row.col(|ui| _ = ui.label(format!("{i}")));
                 }
 
-                row.col(|ui| _ = ui.label("Last"));
+                row.col(|ui| _ = ui.label("Previous"));
                 row.col(|ui| _ = ui.label("Current"));
             })
             .body(|body| {
