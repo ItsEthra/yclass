@@ -1,8 +1,5 @@
 use crate::{
-    address::parse_address,
-    context::{InspectionContext, Selection},
-    field::FieldResponse,
-    state::StateRef,
+    address::parse_address, context::InspectionContext, field::FieldResponse, state::StateRef,
     FID_M,
 };
 use eframe::{
@@ -12,27 +9,17 @@ use eframe::{
 use fastrand::Rng;
 
 pub struct InspectorPanel {
-    pub selection: Option<Selection>,
-
     address_buffer: String,
     state: StateRef,
-    address: usize,
     allow_scroll: bool,
 }
 
 impl InspectorPanel {
     pub fn new(state: StateRef) -> Self {
-        #[cfg(not(debug_assertions))]
-        let address = 0;
-        #[cfg(debug_assertions)]
-        let address = state.borrow().config.last_address.unwrap_or(0);
-
         Self {
             state,
-            address,
             allow_scroll: true,
-            selection: None,
-            address_buffer: format!("0x{address:X}"),
+            address_buffer: format!("0x{:X}", state.borrow().inspect_address),
         }
     }
 
@@ -73,7 +60,7 @@ impl InspectorPanel {
                         let r = ui.text_edit_singleline(&mut self.address_buffer);
                         if r.lost_focus() {
                             if let Some(addr) = parse_address(&self.address_buffer) {
-                                self.address = addr;
+                                state.inspect_address = addr;
                                 #[cfg(debug_assertions)]
                                 {
                                     state.config.last_address = Some(addr);
@@ -82,7 +69,7 @@ impl InspectorPanel {
                             } else {
                                 state.toasts.error("Address is in invalid format");
                             }
-                            self.address_buffer = format!("0x{:X}", self.address);
+                            self.address_buffer = format!("0x{:X}", state.inspect_address);
                         }
 
                         Some(())
@@ -101,11 +88,11 @@ impl InspectorPanel {
         let mut ctx = InspectionContext {
             current_container: state.class_list.selected()?,
             process: state.process.as_ref()?,
+            address: state.inspect_address,
             class_list: &state.class_list,
+            selection: state.selection,
             toasts: &mut state.toasts,
-            selection: self.selection,
             current_id: Id::new(0),
-            address: self.address,
             parent_id: Id::new(0),
             level_rng: &rng,
             offset: 0,
@@ -130,7 +117,7 @@ impl InspectorPanel {
                     None => {}
                 }
             });
-        self.selection = ctx.selection;
+        state.selection = ctx.selection;
 
         if let Some((name, id)) = new_class {
             state.class_list.add_class_with_id(name, id);

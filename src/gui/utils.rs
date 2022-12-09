@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use eframe::egui::TextBuffer;
 use std::{ops::Range, str::FromStr};
 
@@ -24,16 +22,9 @@ impl<T, E> TextEditBind<T, E> {
         self.value.as_ref().map(|v| v.as_ref())
     }
 
-    pub fn new_with(
-        buf: impl Into<String>,
-        value: Option<T>,
-        convert: impl Fn(&str) -> Result<T, E> + 'static,
-    ) -> Self {
-        Self {
-            buf: buf.into(),
-            value: value.map(|v| Ok(v)),
-            convert: Box::new(convert),
-        }
+    pub fn set(&mut self, value: T, buf: impl Into<String>) {
+        self.value = Some(Ok(value));
+        self.buf = buf.into();
     }
 
     fn update(&mut self) {
@@ -52,14 +43,6 @@ impl<T: Clone, E: Clone> TextEditBind<T, E> {
 }
 
 impl<T: FromStr + 'static> TextEditBind<T, T::Err> {
-    pub fn new_from_str() -> Self {
-        Self {
-            buf: String::new(),
-            value: None,
-            convert: Box::new(T::from_str),
-        }
-    }
-
     pub fn new_from_str_with(buf: impl Into<String>, value: Option<T>) -> Self {
         Self {
             buf: buf.into(),

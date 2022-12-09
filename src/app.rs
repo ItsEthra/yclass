@@ -40,8 +40,7 @@ impl App for YClassApp {
             Some(ToolBarResponse::Add(n)) => {
                 let state = &mut *self.state.borrow_mut();
 
-                if let Some(cid) = self
-                    .inspector
+                if let Some(cid) = state
                     .selection
                     .map(|s| s.container_id)
                     .or_else(|| state.class_list.selected())
@@ -53,14 +52,14 @@ impl App for YClassApp {
                 }
             }
             Some(ToolBarResponse::Remove(n)) => {
+                let state = &mut *self.state.borrow_mut();
+
                 if let Some(Selection {
                     container_id,
                     field_id,
                     ..
-                }) = self.inspector.selection
+                }) = state.selection
                 {
-                    let state = &mut *self.state.borrow_mut();
-
                     let class = state.class_list.by_id_mut(container_id).unwrap();
                     let pos = class
                         .fields
@@ -77,14 +76,14 @@ impl App for YClassApp {
                 }
             }
             Some(ToolBarResponse::Insert(n)) => {
+                let state = &mut *self.state.borrow_mut();
+
                 if let Some(Selection {
                     container_id,
                     field_id,
                     ..
-                }) = self.inspector.selection
+                }) = state.selection
                 {
-                    let state = &mut *self.state.borrow_mut();
-
                     let class = state.class_list.by_id_mut(container_id).unwrap();
                     let pos = class
                         .fields
@@ -101,14 +100,14 @@ impl App for YClassApp {
                 }
             }
             Some(ToolBarResponse::ChangeKind(new)) => {
+                let state = &mut *self.state.borrow_mut();
+
                 if let Some(Selection {
                     container_id,
                     field_id,
                     ..
-                }) = self.inspector.selection
+                }) = state.selection
                 {
-                    let state = &mut *self.state.borrow_mut();
-
                     let class = state.class_list.by_id_mut(container_id).unwrap();
                     let pos = class
                         .fields
@@ -124,8 +123,7 @@ impl App for YClassApp {
                             class.fields.insert(pos + 1, pad);
                         }
 
-                        self.inspector.selection.as_mut().unwrap().field_id =
-                            class.fields[pos].id();
+                        state.selection.as_mut().unwrap().field_id = class.fields[pos].id();
                     } else {
                         let (mut steal_size, mut steal_len) = (0, 0);
                         while steal_size < new.size() {
@@ -153,8 +151,7 @@ impl App for YClassApp {
                                 class.fields.insert(pos + 1, pad);
                             }
 
-                            self.inspector.selection.as_mut().unwrap().field_id =
-                                class.fields[pos].id();
+                            state.selection.as_mut().unwrap().field_id = class.fields[pos].id();
                         }
                     }
 

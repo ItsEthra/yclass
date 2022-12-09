@@ -3,8 +3,8 @@ use crate::{
     address::parse_address, field::FieldKind, process::Process, state::StateRef, value::Value,
 };
 use eframe::{
-    egui::{ComboBox, Context, TextEdit, Ui, Window},
-    epaint::FontId,
+    egui::{ComboBox, Context, RichText, TextEdit, Ui, Window},
+    epaint::{Color32, FontId},
 };
 use egui_extras::{Column, TableBuilder};
 use std::{iter::repeat, rc::Rc};
@@ -70,8 +70,7 @@ impl SearchResult {
         p.read(address, &mut buf[..]);
 
         let current_value = bytes_to_value(&buf, self.last_value.kind());
-
-        match filter {
+        let result = match filter {
             FilterMode::Less => current_value < new_value,
             FilterMode::LessEq => current_value <= new_value,
             FilterMode::Greater => current_value > new_value,
@@ -80,7 +79,10 @@ impl SearchResult {
             FilterMode::NotEqual => current_value != new_value,
             FilterMode::Changed => current_value != self.last_value,
             FilterMode::Unchanged => current_value == self.last_value,
-        }
+        };
+
+        self.last_value = current_value;
+        result
     }
 }
 
@@ -129,6 +131,16 @@ impl SpiderWindow {
 
     pub fn toggle(&mut self) {
         self.shown = !self.shown;
+
+        if self.shown && self.base_address.value().is_none() {
+            let address = self
+                .state
+                .borrow()
+                .selection
+                .map(|s| s.address)
+                .unwrap_or_else(|| self.state.borrow().inspect_address);
+            self.base_address.set(address, format!("{address:X}"));
+        }
     }
 
     pub fn show(&mut self, ctx: &Context) -> eyre::Result<Option<()>> {
@@ -179,6 +191,7 @@ impl SpiderWindow {
                                     .clicked()
                                 {
                                     self.field_kind = *var;
+                                    self.alignment.set(var.size(), var.size().to_string());
                                 }
                             }
                         });
@@ -266,7 +279,7 @@ impl SpiderWindow {
         };
 
         let levels = *self.max_levels.value().unwrap().unwrap();
-        let w = ui.available_width() / (levels + 2) as f32;
+        let w = ui.available_width() / (levels + 2) as f32 - 4.;
 
         TableBuilder::new(ui)
             .striped(true)
@@ -295,6 +308,7 @@ impl SpiderWindow {
                         row.col(|ui| _ = ui.label(""));
                     }
 
+                    // Display last value
                     row.col(|ui| _ = ui.label(format!("{}", result.last_value)));
 
                     let mut address = address;
@@ -309,8 +323,15 @@ impl SpiderWindow {
 
                     process.read(address, &mut buf[..]);
 
+                    // Display current value
                     let current = bytes_to_value(&buf, result.last_value.kind());
-                    row.col(|ui| _ = ui.label(format!("{}", current)));
+                    row.col(|ui| {
+                        if current != result.last_value {
+                            ui.label(RichText::new(current.to_string()).color(Color32::KHAKI));
+                        } else {
+                            ui.label(current.to_string());
+                        }
+                    });
                 })
             })
     }
