@@ -21,15 +21,6 @@ enum FilterMode {
     Unchanged,
 }
 
-#[derive(Debug)]
-struct SearchResult {
-    // This should optimize memory usage for large amount of offsets,
-    // We aren't modifying them anyways.
-    parent_offsets: Rc<Vec<usize>>,
-    offset: usize,
-    last_value: Value,
-}
-
 impl FilterMode {
     const NAMED_VARIANTS: &[(Self, &'static str)] = &[
         (Self::Greater, "Greater"),
@@ -47,6 +38,49 @@ impl FilterMode {
             .iter()
             .find_map(|(v, s)| if v == self { Some(*s) } else { None })
             .unwrap()
+    }
+}
+
+#[derive(Debug)]
+struct SearchResult {
+    // This should optimize memory usage for large amount of offsets,
+    // We aren't modifying them anyways.
+    parent_offsets: Rc<Vec<usize>>,
+    offset: usize,
+    last_value: Value,
+}
+
+impl SearchResult {
+    pub fn should_remain(
+        &mut self,
+        p: &Process,
+        mut address: usize,
+        filter: FilterMode,
+        new_value: Value,
+    ) -> bool {
+        let mut buf = [0; 8];
+
+        for offset in self.parent_offsets.iter() {
+            p.read(address + offset, &mut buf[..]);
+            address = usize::from_ne_bytes(buf);
+        }
+        p.read(address + self.offset, &mut buf[..]);
+        address = usize::from_ne_bytes(buf);
+
+        p.read(address, &mut buf[..]);
+
+        let current_value = bytes_to_value(&buf, self.last_value.kind());
+
+        match filter {
+            FilterMode::Less => current_value < new_value,
+            FilterMode::LessEq => current_value <= new_value,
+            FilterMode::Greater => current_value > new_value,
+            FilterMode::GreaterEq => current_value >= new_value,
+            FilterMode::Equal => current_value == new_value,
+            FilterMode::NotEqual => current_value != new_value,
+            FilterMode::Changed => current_value != self.last_value,
+            FilterMode::Unchanged => current_value == self.last_value,
+        }
     }
 }
 
@@ -177,13 +211,33 @@ impl SpiderWindow {
                             }
                         });
 
-                    ui.horizontal(|ui| {
-                        if ui.button("Next search").clicked() {}
+                    let inner: eyre::Result<()> = ui
+                        .horizontal(|ui| {
+                            if ui.button("Next search").clicked() {
+                                let address = self
+                                    .base_address
+                                    .value_clone()
+                                    .map(|v| {
+                                        v.map_err(|_| {
+                                            eyre::eyre!("Base adderss is in invalid format")
+                                        })
+                                    })
+                                    .ok_or(eyre::eyre!("Base address is required"))??;
+                                let value = parse_kind_to_value(self.field_kind, &self.value_buf)?;
 
-                        if ui.button("Clear results").clicked() {
-                            self.results.clear();
-                        }
-                    });
+                                self.results.retain_mut(|r| {
+                                    r.should_remain(process, address, self.filter, value)
+                                });
+                            }
+
+                            if ui.button("Clear results").clicked() {
+                                self.results.clear();
+                            }
+
+                            Ok(())
+                        })
+                        .inner;
+                    _ = inner?;
 
                     ui.separator();
 
@@ -254,6 +308,7 @@ impl SpiderWindow {
                     address = usize::from_ne_bytes(buf);
 
                     process.read(address, &mut buf[..]);
+
                     let current = bytes_to_value(&buf, result.last_value.kind());
                     row.col(|ui| _ = ui.label(format!("{}", current)));
                 })
