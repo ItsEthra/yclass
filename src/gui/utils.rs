@@ -3,6 +3,8 @@
 use eframe::egui::TextBuffer;
 use std::{ops::Range, str::FromStr};
 
+pub type TextEditFromStrBind<T> = TextEditBind<T, <T as FromStr>::Err>;
+
 pub struct TextEditBind<T, E> {
     buf: String,
     value: Option<Result<T, E>>,

@@ -1,5 +1,6 @@
-use crate::{field::FieldKind, state::StateRef, value::Value};
-use eframe::egui::Context;
+use super::{TextEditBind, TextEditFromStrBind};
+use crate::{address::parse_address, field::FieldKind, state::StateRef, value::Value};
+use eframe::egui::{ComboBox, Context, TextEdit, Ui, Window};
 
 #[derive(PartialEq, Clone, Copy)]
 enum FilterMode {
@@ -12,6 +13,8 @@ enum FilterMode {
     Changed,
     Unchanged,
 }
+
+pub struct SearchResult {}
 
 impl FilterMode {
     const NAMED_VARIANTS: &[(Self, &'static str)] = &[
@@ -29,13 +32,32 @@ impl FilterMode {
 pub struct SpiderWindow {
     state: StateRef,
     shown: bool,
+
+    max_levels: TextEditFromStrBind<usize>,
+    struct_size: TextEditFromStrBind<usize>,
+    alignment: TextEditFromStrBind<usize>,
+    field_kind: FieldKind,
+
+    base_address: TextEditBind<usize, ()>,
+    value_buf: String,
+
+    results: Vec<SearchResult>,
 }
 
 impl SpiderWindow {
     pub fn new(state: StateRef) -> Self {
         Self {
-            state,
+            alignment: TextEditFromStrBind::new_from_str_with("4", Some(4)),
+            max_levels: TextEditFromStrBind::new_from_str_with("2", Some(2)),
+            struct_size: TextEditFromStrBind::new_from_str_with("256", Some(256)),
+            field_kind: FieldKind::I32,
+
+            base_address: TextEditBind::new(|s| parse_address(s).ok_or(())),
+            value_buf: String::new(),
+
+            results: vec![],
             shown: false,
+            state,
         }
     }
 
@@ -43,7 +65,66 @@ impl SpiderWindow {
         self.shown = !self.shown;
     }
 
-    pub fn show(&mut self, ctx: &Context) {}
+    pub fn show(&mut self, ctx: &Context) -> eyre::Result<()> {
+        Window::new("Structure spider")
+            .open(&mut self.shown)
+            .show(ctx, |ui| {
+                fn show_edit<T, E>(
+                    enabled: bool,
+                    ui: &mut Ui,
+                    bind: &mut TextEditBind<T, E>,
+                    label: &str,
+                ) {
+                    let w = ui.available_width() / 2.;
+
+                    ui.horizontal(|ui| {
+                        ui.set_enabled(enabled);
+                        ui.add(TextEdit::singleline(bind).desired_width(w));
+                        ui.label(label);
+                    });
+                }
+
+                let unlocked = self.results.is_empty();
+                show_edit(unlocked, ui, &mut self.max_levels, "Max levels");
+                show_edit(unlocked, ui, &mut self.struct_size, "Structure size");
+                show_edit(unlocked, ui, &mut self.alignment, "Alignment");
+                ui.scope(|ui| {
+                    ui.set_enabled(unlocked);
+
+                    ComboBox::new("_spider_select_kind", "Field type")
+                        .width(ui.available_width() / 2. + 8. /* No clue */)
+                        .selected_text(self.field_kind.label().unwrap())
+                        .show_ui(ui, |ui| {
+                            for (var, label) in FieldKind::NAMED_VARIANTS {
+                                if ui
+                                    .selectable_label(*var == self.field_kind, *label)
+                                    .clicked()
+                                {
+                                    self.field_kind = *var;
+                                }
+                            }
+                        });
+                });
+
+                ui.separator();
+
+                let w = ui.available_width() / 2.;
+                show_edit(true, ui, &mut self.base_address, "Base address");
+                ui.horizontal(|ui| {
+                    ui.add(TextEdit::singleline(&mut self.value_buf).desired_width(w));
+                    ui.label("Value");
+                });
+
+                ui.separator();
+
+                if self.results.is_empty() {
+                    ui.button("First search");
+                } else {
+                }
+            });
+
+        Ok(())
+    }
 }
 
 fn bytes_to_value(arr: &[u8; 8], kind: FieldKind) -> Value {

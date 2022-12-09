@@ -25,6 +25,12 @@ impl FieldKind {
         (Self::F32, "F32"),
         (Self::F64, "F64"),
     ];
+
+    pub fn label(&self) -> Option<&'static str> {
+        Self::NAMED_VARIANTS
+            .iter()
+            .find_map(|(v, s)| if v == self { Some(*s) } else { None })
+    }
 }
 
 impl FieldKind {
