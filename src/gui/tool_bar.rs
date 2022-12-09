@@ -1,7 +1,11 @@
 use super::{GeneratorWindow, ProcessAttachWindow};
-use crate::{class::ClassList, field::FieldKind, state::StateRef};
+use crate::{
+    class::ClassList,
+    field::FieldKind,
+    state::{GlobalState, StateRef},
+};
 use eframe::{
-    egui::{style::Margin, Button, Context, Frame, RichText, TopBottomPanel, Ui},
+    egui::{style::Margin, Button, Context, Frame, RichText, TopBottomPanel, Ui, WidgetText},
     epaint::{vec2, Color32, Rounding},
 };
 use memflex::external::ProcessIterator;
@@ -56,6 +60,8 @@ impl ToolBarPanel {
         }
 
         self.generator_window.show(ctx);
+
+        self.run_hotkeys(ctx, &mut response);
 
         let style = ctx.style();
         let frame = Frame {
@@ -142,6 +148,21 @@ impl ToolBarPanel {
         response
     }
 
+    fn run_hotkeys(&mut self, ctx: &Context, response: &mut Option<ToolBarResponse>) {
+        let state = &mut *self.state.borrow_mut();
+        let input = &*ctx.input();
+
+        if state.hotkeys.pressed("attach_process", input) {
+            self.ps_attach_window.toggle();
+        }
+
+        if state.hotkeys.pressed("attach_recent", input) {
+            if let Some(name) = state.config.last_attached_process_name.as_ref().cloned() {
+                attach_to_process(state, &name, response);
+            }
+        }
+    }
+
     fn project_menu(&mut self, ui: &mut Ui) {
         let state = &mut *self.state.borrow_mut();
 
@@ -195,39 +216,25 @@ impl ToolBarPanel {
     }
 
     fn process_menu(&mut self, ui: &mut Ui, response: &mut Option<ToolBarResponse>) {
-        if ui.button("Attach to process").clicked() {
+        ui.set_width(200.);
+
+        let state = &mut *self.state.borrow_mut();
+
+        if shortcut_button(ui, state, "attach_process", "Attach to process") {
             self.ps_attach_window.toggle();
             ui.close_menu();
         }
 
-        let state = &mut *self.state.borrow_mut();
-
         // Reattach to last process
-        if let Some(last_proc_name) = state.config.last_attached_process_name.as_ref().cloned() {
-            if ui.button(format!("Attach to {last_proc_name}")).clicked() {
-                let last_proc = match ProcessIterator::new() {
-                    Ok(mut piter) => piter.find(|pe| pe.name.eq_ignore_ascii_case(&last_proc_name)),
-                    Err(e) => {
-                        state
-                            .toasts
-                            .error(format!("Failed to iterate over processes. {e}"));
-                        return;
-                    }
-                };
-
-                if let Some(pe) = last_proc {
-                    *response = Some(ToolBarResponse::ProcessAttach(pe.id));
-                } else {
-                    state
-                        .toasts
-                        .error(format!("Failed to find {last_proc_name}"));
-                }
+        if let Some(name) = state.config.last_attached_process_name.as_ref().cloned() {
+            if shortcut_button(ui, state, "attach_recent", format!("Attach to {name}")) {
+                attach_to_process(state, &name, response);
 
                 ui.close_menu();
             }
         }
 
-        if ui.button("Detach from process").clicked() {
+        if shortcut_button(ui, state, "detach_process", "Detach from process") {
             *response = Some(ToolBarResponse::ProcessDetach);
             ui.close_menu();
         }
@@ -283,5 +290,33 @@ impl ToolBarPanel {
         ui.add_space(2.);
 
         create_change_field_type_group!(ui, response, BLACK, BROWN, Ptr);
+    }
+}
+
+fn shortcut_button(
+    ui: &mut Ui,
+    state: &GlobalState,
+    name: &'static str,
+    label: impl Into<WidgetText>,
+) -> bool {
+    ui.add(Button::new(label).shortcut_text(state.hotkeys.format(name, ui.ctx())))
+        .clicked()
+}
+
+fn attach_to_process(state: &mut GlobalState, name: &str, response: &mut Option<ToolBarResponse>) {
+    let last_proc = match ProcessIterator::new() {
+        Ok(mut piter) => piter.find(|pe| pe.name.eq_ignore_ascii_case(&name)),
+        Err(e) => {
+            state
+                .toasts
+                .error(format!("Failed to iterate over processes. {e}"));
+            return;
+        }
+    };
+
+    if let Some(pe) = last_proc {
+        *response = Some(ToolBarResponse::ProcessAttach(pe.id));
+    } else {
+        state.toasts.error(format!("Failed to find {name}"));
     }
 }
