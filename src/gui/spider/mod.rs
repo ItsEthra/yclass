@@ -67,10 +67,10 @@ impl SearchResult {
         let mut buf = [0; 8];
 
         for offset in self.parent_offsets.iter() {
-            p.read(address + offset, &mut buf[..]);
+            p.read(address.saturating_add(*offset), &mut buf[..]);
             address = usize::from_ne_bytes(buf);
         }
-        p.read(address + self.offset, &mut buf[..]);
+        p.read(address.saturating_add(self.offset), &mut buf[..]);
         address = usize::from_ne_bytes(buf);
 
         p.read(address, &mut buf[..]);

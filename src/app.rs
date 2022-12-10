@@ -159,9 +159,13 @@ impl App for YClassApp {
                 }
             }
             Some(ToolBarResponse::ProcessDetach) => {
-                let state = &mut *self.state.borrow_mut();
+                let mut state = self.state.borrow_mut();
 
-                if let Some(mut process) = self.state.borrow_mut().process.try_write() {
+                if let Some(mut process) = state
+                    .process
+                    .clone() /* ??? */
+                    .try_write()
+                {
                     *process = None;
                     frame.set_window_title("YClass");
                 } else {

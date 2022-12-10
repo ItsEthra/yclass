@@ -32,6 +32,10 @@ impl ScannerState {
         }
     }
 
+    pub fn active(&self) -> bool {
+        self.active
+    }
+
     pub fn begin(&mut self, process: &Arc<RwLock<Option<Process>>>, options: SearchOptions) {
         self.active = true;
         self.start = Instant::now();

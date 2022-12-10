@@ -74,7 +74,9 @@ impl SpiderWindow {
         let shown = unsafe { &mut (*(self as *mut Self)).shown };
 
         match self.scanner.try_take() {
-            ScannerReport::Finshed(time, results) => {
+            ScannerReport::Finshed(time, mut results) => {
+                results.sort_unstable_by_key(|v| v.parent_offsets.len());
+
                 self.results = results;
                 self.scanner_status =
                     Some(format!("Finished in: {:.2}", time.as_secs_f32()).into());
@@ -114,12 +116,12 @@ impl SpiderWindow {
                     });
                 }
 
-                let unlocked = self.results.is_empty();
-                show_edit(unlocked, ui, &mut self.max_levels, "Max levels");
-                show_edit(unlocked, ui, &mut self.struct_size, "Structure size");
-                show_edit(unlocked, ui, &mut self.alignment, "Alignment");
+                let enabled = !self.scanner.active() && self.results.is_empty();
+                show_edit(enabled, ui, &mut self.max_levels, "Max levels");
+                show_edit(enabled, ui, &mut self.struct_size, "Structure size");
+                show_edit(enabled, ui, &mut self.alignment, "Alignment");
                 ui.scope(|ui| {
-                    ui.set_enabled(unlocked);
+                    ui.set_enabled(enabled);
 
                     ComboBox::new("_spider_select_kind", "Field type")
                         .width(ui.available_width() / 2. + 8. /* No clue */)
@@ -152,7 +154,7 @@ impl SpiderWindow {
 
                 ui.separator();
 
-                if self.results.is_empty() {
+                if !self.scanner.active() && self.results.is_empty() {
                     if ui
                         .add_sized(vec2(w + 8., 12.), Button::new("First search"))
                         .clicked()
@@ -212,9 +214,10 @@ impl SpiderWindow {
                                 self.scanner_status = None;
                             }
 
-                            ui.separator();
-
-                            ui.label(format!("Total count: {}", self.results.len()));
+                            if !self.scanner.active() {
+                                ui.separator();
+                                ui.label(format!("Total count: {}", self.results.len()));
+                            }
 
                             Ok(())
                         })
