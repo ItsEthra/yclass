@@ -1,20 +1,48 @@
 use super::{bytes_to_value, SearchOptions, SearchResult};
 use crate::{process::Process, thread_pool::ThreadPool};
 use parking_lot::Mutex;
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicU16, Ordering},
+    Arc,
+};
 
-pub struct ScannerState {}
+pub struct ScannerState {
+    results: Arc<Mutex<Vec<SearchResult>>>,
+    counter: Arc<AtomicU16>,
+    active: bool,
+}
 
 impl ScannerState {
-    pub fn new() {}
+    pub fn new() -> Self {
+        Self {
+            counter: Arc::default(),
+            results: Arc::default(),
+            active: false,
+        }
+    }
+
+    pub fn begin(&mut self, options: SearchOptions, pool: &Arc<ThreadPool>) {
+        self.active = true;
+
+        recursive_first_search(
+            self.counter.clone(),
+            pool.clone(),
+            todo!(),
+            self.results.clone(),
+            options,
+        );
+    }
 }
 
 fn recursive_first_search(
+    counter: Arc<AtomicU16>,
     pool: Arc<ThreadPool>,
     process: Arc<Process>,
     results: Arc<Mutex<Vec<SearchResult>>>,
     opts: SearchOptions,
 ) {
+    counter.fetch_add(1, Ordering::SeqCst);
+
     if opts.depth == 0 {
         return;
     }
@@ -36,9 +64,11 @@ fn recursive_first_search(
                 let results = results.clone();
                 let offsets = opts.offsets.clone();
                 let process = process.clone();
+                let counter = counter.clone();
 
                 move || {
                     recursive_first_search(
+                        counter,
                         pool,
                         process,
                         results,
@@ -67,4 +97,6 @@ fn recursive_first_search(
             });
         }
     }
+
+    counter.fetch_sub(1, Ordering::SeqCst);
 }

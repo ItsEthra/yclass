@@ -1,6 +1,6 @@
 use crate::{
     class::ClassList, config::YClassConfig, context::Selection, hotkeys::HotkeyManager,
-    process::Process, project::ProjectData,
+    process::Process, project::ProjectData, thread_pool::ThreadPool,
 };
 use egui_notify::Toasts;
 use std::{
@@ -8,6 +8,8 @@ use std::{
     collections::HashSet,
     fs,
     path::{Path, PathBuf},
+    sync::Arc,
+    thread::available_parallelism,
 };
 
 pub type StateRef = &'static RefCell<GlobalState>;
@@ -16,6 +18,7 @@ pub struct GlobalState {
     pub last_opened_project: Option<PathBuf>,
     pub selection: Option<Selection>,
     pub process: Option<Process>,
+    pub thread_pool: Arc<ThreadPool>,
     pub hotkeys: HotkeyManager,
     pub inspect_address: usize,
     pub class_list: ClassList,
@@ -29,12 +32,14 @@ pub struct GlobalState {
 impl Default for GlobalState {
     fn default() -> Self {
         let config = YClassConfig::load_or_default();
+        let pool = ThreadPool::new(available_parallelism().map(|i| i.get()).unwrap_or(4));
 
         Self {
             #[cfg(debug_assertions)]
             inspect_address: config.last_address.unwrap_or(0),
             hotkeys: HotkeyManager::default(),
             class_list: ClassList::default(),
+            thread_pool: Arc::new(pool),
             last_opened_project: None,
             toasts: Toasts::default(),
             #[cfg(not(debug_assertions))]

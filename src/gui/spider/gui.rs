@@ -1,4 +1,4 @@
-use super::{FilterMode, SearchResult};
+use super::{FilterMode, ScannerState, SearchResult};
 use crate::{
     address::parse_address,
     field::FieldKind,
@@ -31,6 +31,8 @@ pub struct SpiderWindow {
     results: Vec<SearchResult>,
     last_time: Option<f32>,
     filter: FilterMode,
+
+    scanner: ScannerState,
 }
 
 impl SpiderWindow {
@@ -42,9 +44,10 @@ impl SpiderWindow {
             field_kind: FieldKind::I32,
 
             base_address: TextEditBind::new(|s| parse_address(s).ok_or(())),
-            value_buf: String::new(),
+            scanner: ScannerState::new(),
 
             filter: FilterMode::Equal,
+            value_buf: String::new(),
             last_time: None,
             results: vec![],
             shown: false,
@@ -140,7 +143,8 @@ impl SpiderWindow {
                         .add_sized(vec2(w + 8., 12.), Button::new("First search"))
                         .clicked()
                     {
-                        // let opts = self.collect_options()?;
+                        let opts = self.collect_options()?;
+                        self.scanner.begin(opts, &state.thread_pool);
 
                         // let time = Instant::now();
                         // recursive_first_search(process, &mut self.results, &opts);
