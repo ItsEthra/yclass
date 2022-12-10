@@ -1,6 +1,10 @@
-use super::{TextEditBind, TextEditFromStrBind};
 use crate::{
-    address::parse_address, field::FieldKind, process::Process, state::StateRef, value::Value,
+    address::parse_address,
+    field::FieldKind,
+    gui::{TextEditBind, TextEditFromStrBind},
+    process::Process,
+    state::StateRef,
+    value::Value,
 };
 use eframe::{
     egui::{Button, ComboBox, Context, RichText, TextEdit, Ui, Window},

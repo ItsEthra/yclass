@@ -2,6 +2,8 @@
 
 use parking_lot::Mutex;
 use std::{
+    collections::VecDeque,
+    pin::Pin,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -9,7 +11,7 @@ use std::{
     thread::{park, spawn, JoinHandle},
 };
 
-type TaskPool = Arc<Mutex<Vec<Box<dyn Task>>>>;
+type TaskPool = Arc<Mutex<VecDeque<Pin<Box<dyn Task>>>>>;
 
 pub struct ThreadPool {
     threads: Vec<ThreadHandle>,
@@ -35,7 +37,7 @@ impl ThreadPool {
 
                 move || loop {
                     let mut lock = tasks.lock();
-                    if let Some(mut task) = lock.pop() {
+                    if let Some(task) = lock.pop_front() {
                         drop(lock);
 
                         task.execute();
@@ -59,7 +61,7 @@ impl ThreadPool {
     }
 
     pub fn spawn(&self, task: impl Task) {
-        self.tasks.clone().lock().push(Box::new(task));
+        self.tasks.clone().lock().push_back(Box::pin(task));
 
         for thread in self.threads.iter() {
             if thread.parked.load(Ordering::SeqCst) {
@@ -78,12 +80,15 @@ impl ThreadPool {
 }
 
 pub trait Task: Send + Sync + 'static {
-    fn execute(&mut self);
+    fn execute(self: Pin<Box<Self>>);
 }
 
-impl<T: FnMut() + Send + Sync + 'static> Task for T {
+impl<T: FnOnce() + Send + Sync + 'static> Task for T {
     #[inline]
-    fn execute(&mut self) {
-        self();
+    fn execute(mut self: Pin<Box<T>>) {
+        unsafe {
+            let task = std::ptr::read(self.as_mut().get_unchecked_mut());
+            task();
+        }
     }
 }
