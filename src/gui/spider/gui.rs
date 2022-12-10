@@ -1,4 +1,4 @@
-use super::{FilterMode, ScannerState, SearchResult};
+use super::{FilterMode, ScannerReport, ScannerState, SearchResult};
 use crate::{
     address::parse_address,
     field::FieldKind,
@@ -14,7 +14,7 @@ use eframe::{
     epaint::{vec2, Color32, FontId},
 };
 use egui_extras::{Column, TableBuilder};
-use std::{iter::repeat, sync::Arc, time::Instant};
+use std::{borrow::Cow, iter::repeat, sync::Arc, time::Instant};
 
 pub struct SpiderWindow {
     state: StateRef,
@@ -28,8 +28,8 @@ pub struct SpiderWindow {
     base_address: TextEditBind<usize, ()>,
     value_buf: String,
 
+    scanner_status: Option<Cow<'static, str>>,
     results: Vec<SearchResult>,
-    last_time: Option<f32>,
     filter: FilterMode,
 
     scanner: ScannerState,
@@ -48,7 +48,7 @@ impl SpiderWindow {
 
             filter: FilterMode::Equal,
             value_buf: String::new(),
-            last_time: None,
+            scanner_status: None,
             results: vec![],
             shown: false,
             state,
@@ -70,7 +70,20 @@ impl SpiderWindow {
     }
 
     pub fn show(&mut self, ctx: &Context) -> eyre::Result<Option<()>> {
+        // I promise not to use self.show anywhere else.
         let shown = unsafe { &mut (*(self as *mut Self)).shown };
+
+        match self.scanner.try_take() {
+            ScannerReport::Finshed(time, results) => {
+                self.results = results;
+                self.scanner_status =
+                    Some(format!("Finished in: {:.2}", time.as_secs_f32()).into());
+            }
+            ScannerReport::InProgress => {
+                self.scanner_status = Some("In progress".into());
+            }
+            ScannerReport::Idle => {}
+        }
 
         Window::new("Structure spider")
             .open(shown)
@@ -145,7 +158,7 @@ impl SpiderWindow {
                         .clicked()
                     {
                         let opts = self.collect_options()?;
-                        self.scanner.begin(&state.process, opts, &state.thread_pool);
+                        self.scanner.begin(&state.process, opts);
 
                         // let time = Instant::now();
                         // recursive_first_search(process, &mut self.results, &opts);
@@ -164,9 +177,9 @@ impl SpiderWindow {
                             });
 
                         // Size: 1024, Depth: 4 => 7.08s
-                        if let Some(t) = self.last_time {
+                        if let Some(status) = self.scanner_status.as_deref() {
                             ui.separator();
-                            ui.label(format!("Search time: {t:.2}s"));
+                            ui.label(status);
                         }
                     });
 
@@ -188,12 +201,15 @@ impl SpiderWindow {
                                 self.results.retain_mut(|r| {
                                     r.should_remain(process, address, self.filter, value)
                                 });
-                                self.last_time = Some(time.elapsed().as_secs_f32())
+                                self.scanner_status = Some(
+                                    format!("Finished in: {:.2}", time.elapsed().as_secs_f32())
+                                        .into(),
+                                );
                             }
 
                             if ui.button("Clear results").clicked() {
                                 self.results.clear();
-                                self.last_time = None;
+                                self.scanner_status = None;
                             }
 
                             ui.separator();

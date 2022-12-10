@@ -7,7 +7,7 @@ use crate::{field::FieldKind, process::Process, value::Value};
 use std::sync::Arc;
 
 #[derive(PartialEq, Clone, Copy)]
-enum FilterMode {
+pub(crate) enum FilterMode {
     Greater,
     GreaterEq,
     Less,
@@ -48,7 +48,7 @@ pub(crate) struct SearchOptions {
 }
 
 #[derive(Debug)]
-struct SearchResult {
+pub(crate) struct SearchResult {
     // This should optimize memory usage for large amount of offsets,
     // We aren't modifying them anyways.
     parent_offsets: Arc<Vec<usize>>,

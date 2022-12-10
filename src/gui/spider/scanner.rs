@@ -1,15 +1,25 @@
 use super::{bytes_to_value, SearchOptions, SearchResult};
-use crate::{process::Process, thread_pool::ThreadPool};
+use crate::process::Process;
 use parking_lot::{Mutex, RwLock};
-use std::sync::{
-    atomic::{AtomicU16, Ordering},
-    Arc,
+use std::{
+    sync::{
+        atomic::{AtomicU16, Ordering},
+        Arc,
+    },
+    time::{Duration, Instant},
 };
 
 pub(crate) struct ScannerState {
     results: Arc<Mutex<Vec<SearchResult>>>,
     counter: Arc<AtomicU16>,
+    start: Instant,
     active: bool,
+}
+
+pub(crate) enum ScannerReport {
+    Finshed(Duration, Vec<SearchResult>),
+    InProgress,
+    Idle,
 }
 
 impl ScannerState {
@@ -17,40 +27,52 @@ impl ScannerState {
         Self {
             counter: Arc::default(),
             results: Arc::default(),
+            start: Instant::now(),
             active: false,
         }
     }
 
-    pub fn begin(
-        &mut self,
-        process: &Arc<RwLock<Option<Process>>>,
-        options: SearchOptions,
-        pool: &Arc<ThreadPool>,
-    ) {
+    pub fn begin(&mut self, process: &Arc<RwLock<Option<Process>>>, options: SearchOptions) {
         self.active = true;
+        self.start = Instant::now();
+        self.counter.store(0, Ordering::SeqCst);
 
         recursive_first_search(
             self.counter.clone(),
-            pool.clone(),
             process.clone(),
             self.results.clone(),
             options,
         );
     }
+
+    pub fn try_take(&mut self) -> ScannerReport {
+        if self.active {
+            if self.counter.load(Ordering::SeqCst) == 0 {
+                self.active = false;
+                ScannerReport::Finshed(
+                    self.start.elapsed(),
+                    std::mem::take(&mut *self.results.lock()),
+                )
+            } else {
+                ScannerReport::InProgress
+            }
+        } else {
+            ScannerReport::Idle
+        }
+    }
 }
 
 fn recursive_first_search(
     counter: Arc<AtomicU16>,
-    pool: Arc<ThreadPool>,
     process: Arc<RwLock<Option<Process>>>,
     results: Arc<Mutex<Vec<SearchResult>>>,
     opts: SearchOptions,
 ) {
-    counter.fetch_add(1, Ordering::SeqCst);
-
     if opts.depth == 0 {
         return;
     }
+
+    counter.fetch_add(1, Ordering::SeqCst);
 
     let start = opts.address
         + if opts.address % opts.alignment == 0 {
@@ -70,8 +92,7 @@ fn recursive_first_search(
                 .unwrap()
                 .can_read(usize::from_ne_bytes(buf))
         {
-            pool.spawn({
-                let pool = pool.clone();
+            rayon::spawn({
                 let results = results.clone();
                 let offsets = opts.offsets.clone();
                 let process = process.clone();
@@ -80,7 +101,6 @@ fn recursive_first_search(
                 move || {
                     recursive_first_search(
                         counter,
-                        pool,
                         process,
                         results,
                         SearchOptions {
