@@ -68,8 +68,6 @@ impl ToolBarPanel {
 
         self.run_hotkeys(ctx, &mut response);
 
-        self.run_hotkeys(ctx, &mut response);
-
         let style = ctx.style();
         let frame = Frame {
             inner_margin: Margin::same(0.),

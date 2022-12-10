@@ -7,7 +7,7 @@ use eframe::{
     epaint::{vec2, Color32, FontId},
 };
 use egui_extras::{Column, TableBuilder};
-use std::{iter::repeat, rc::Rc};
+use std::{iter::repeat, rc::Rc, time::Instant};
 
 #[derive(PartialEq, Clone, Copy)]
 enum FilterMode {
@@ -108,6 +108,7 @@ pub struct SpiderWindow {
     value_buf: String,
 
     results: Vec<SearchResult>,
+    last_time: Option<f32>,
     filter: FilterMode,
 }
 
@@ -123,6 +124,7 @@ impl SpiderWindow {
             value_buf: String::new(),
 
             filter: FilterMode::Equal,
+            last_time: None,
             results: vec![],
             shown: false,
             state,
@@ -218,18 +220,29 @@ impl SpiderWindow {
                         .clicked()
                     {
                         let opts = self.collect_options()?;
+
+                        let time = Instant::now();
                         recursive_first_search(process, &mut self.results, &opts);
+                        self.last_time = Some(time.elapsed().as_secs_f32())
                     }
                 } else {
-                    ComboBox::new("_spider_filter_box", "Filter")
-                        .selected_text(self.filter.label())
-                        .show_ui(ui, |ui| {
-                            for (var, label) in FilterMode::NAMED_VARIANTS {
-                                if ui.selectable_label(*var == self.filter, *label).clicked() {
-                                    self.filter = *var;
+                    ui.horizontal(|ui| {
+                        ComboBox::new("_spider_filter_box", "Filter")
+                            .selected_text(self.filter.label())
+                            .show_ui(ui, |ui| {
+                                for (var, label) in FilterMode::NAMED_VARIANTS {
+                                    if ui.selectable_label(*var == self.filter, *label).clicked() {
+                                        self.filter = *var;
+                                    }
                                 }
-                            }
-                        });
+                            });
+
+                        // Size: 1024, Depth: 4 => 7.08s
+                        if let Some(t) = self.last_time {
+                            ui.separator();
+                            ui.label(format!("Search time: {t:.2}s"));
+                        }
+                    });
 
                     let inner: eyre::Result<()> = ui
                         .horizontal(|ui| {
@@ -245,13 +258,16 @@ impl SpiderWindow {
                                     .ok_or(eyre::eyre!("Base address is required"))??;
                                 let value = parse_kind_to_value(self.field_kind, &self.value_buf)?;
 
+                                let time = Instant::now();
                                 self.results.retain_mut(|r| {
                                     r.should_remain(process, address, self.filter, value)
                                 });
+                                self.last_time = Some(time.elapsed().as_secs_f32())
                             }
 
                             if ui.button("Clear results").clicked() {
                                 self.results.clear();
+                                self.last_time = None;
                             }
 
                             ui.separator();
