@@ -3,6 +3,7 @@ use crate::{
     process::Process, project::ProjectData, thread_pool::ThreadPool,
 };
 use egui_notify::Toasts;
+use parking_lot::RwLock;
 use std::{
     cell::RefCell,
     collections::HashSet,
@@ -17,7 +18,7 @@ pub type StateRef = &'static RefCell<GlobalState>;
 pub struct GlobalState {
     pub last_opened_project: Option<PathBuf>,
     pub selection: Option<Selection>,
-    pub process: Option<Process>,
+    pub process: Arc<RwLock<Option<Process>>>,
     pub thread_pool: Arc<ThreadPool>,
     pub hotkeys: HotkeyManager,
     pub inspect_address: usize,
@@ -42,10 +43,10 @@ impl Default for GlobalState {
             thread_pool: Arc::new(pool),
             last_opened_project: None,
             toasts: Toasts::default(),
+            process: Arc::default(),
             #[cfg(not(debug_assertions))]
             inspect_address: 0,
             selection: None,
-            process: None,
             dummy: true,
             config,
         }

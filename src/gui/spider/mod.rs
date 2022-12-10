@@ -1,7 +1,7 @@
 mod gui;
 pub use gui::*;
 mod scanner;
-pub use scanner::*;
+pub(crate) use scanner::*;
 
 use crate::{field::FieldKind, process::Process, value::Value};
 use std::sync::Arc;
@@ -38,7 +38,7 @@ impl FilterMode {
     }
 }
 
-struct SearchOptions {
+pub(crate) struct SearchOptions {
     offsets: Arc<Vec<usize>>,
     struct_size: usize,
     alignment: usize,

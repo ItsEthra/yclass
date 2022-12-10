@@ -77,7 +77,8 @@ impl SpiderWindow {
             .show(ctx, |ui| {
                 let state = &mut *self.state.borrow_mut();
 
-                let Some(process) = state.process.as_ref() else {
+                let process_lock = state.process.read();
+                let Some(process) = process_lock.as_ref() else {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Attach to a process first");
                     });
@@ -144,7 +145,7 @@ impl SpiderWindow {
                         .clicked()
                     {
                         let opts = self.collect_options()?;
-                        self.scanner.begin(opts, &state.thread_pool);
+                        self.scanner.begin(&state.process, opts, &state.thread_pool);
 
                         // let time = Instant::now();
                         // recursive_first_search(process, &mut self.results, &opts);

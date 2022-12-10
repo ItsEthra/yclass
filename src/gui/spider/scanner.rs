@@ -1,12 +1,12 @@
 use super::{bytes_to_value, SearchOptions, SearchResult};
 use crate::{process::Process, thread_pool::ThreadPool};
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 use std::sync::{
     atomic::{AtomicU16, Ordering},
     Arc,
 };
 
-pub struct ScannerState {
+pub(crate) struct ScannerState {
     results: Arc<Mutex<Vec<SearchResult>>>,
     counter: Arc<AtomicU16>,
     active: bool,
@@ -21,13 +21,18 @@ impl ScannerState {
         }
     }
 
-    pub fn begin(&mut self, options: SearchOptions, pool: &Arc<ThreadPool>) {
+    pub fn begin(
+        &mut self,
+        process: &Arc<RwLock<Option<Process>>>,
+        options: SearchOptions,
+        pool: &Arc<ThreadPool>,
+    ) {
         self.active = true;
 
         recursive_first_search(
             self.counter.clone(),
             pool.clone(),
-            todo!(),
+            process.clone(),
             self.results.clone(),
             options,
         );
@@ -37,7 +42,7 @@ impl ScannerState {
 fn recursive_first_search(
     counter: Arc<AtomicU16>,
     pool: Arc<ThreadPool>,
-    process: Arc<Process>,
+    process: Arc<RwLock<Option<Process>>>,
     results: Arc<Mutex<Vec<SearchResult>>>,
     opts: SearchOptions,
 ) {
@@ -56,9 +61,15 @@ fn recursive_first_search(
 
     for address in (start..start + opts.struct_size).step_by(opts.alignment) {
         let mut buf = [0; 8];
-        process.read(address, &mut buf[..]);
+        process.read().as_ref().unwrap().read(address, &mut buf[..]);
 
-        if address % 8 == 0 && process.can_read(usize::from_ne_bytes(buf)) {
+        if address % 8 == 0
+            && process
+                .read()
+                .as_ref()
+                .unwrap()
+                .can_read(usize::from_ne_bytes(buf))
+        {
             pool.spawn({
                 let pool = pool.clone();
                 let results = results.clone();
