@@ -18,6 +18,7 @@ mod hotkeys;
 mod process;
 mod project;
 mod state;
+mod thread_pool;
 mod value;
 
 use config::YClassConfig;
