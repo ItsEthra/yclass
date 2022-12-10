@@ -1,103 +1,20 @@
+use super::{FilterMode, SearchResult};
 use crate::{
     address::parse_address,
     field::FieldKind,
-    gui::{TextEditBind, TextEditFromStrBind},
+    gui::{
+        spider::{bytes_to_value, parse_kind_to_value, SearchOptions},
+        TextEditBind, TextEditFromStrBind,
+    },
     process::Process,
     state::StateRef,
-    value::Value,
 };
 use eframe::{
     egui::{Button, ComboBox, Context, RichText, TextEdit, Ui, Window},
     epaint::{vec2, Color32, FontId},
 };
 use egui_extras::{Column, TableBuilder};
-use std::{iter::repeat, rc::Rc, time::Instant};
-
-#[derive(PartialEq, Clone, Copy)]
-enum FilterMode {
-    Greater,
-    GreaterEq,
-    Less,
-    LessEq,
-    Equal,
-    NotEqual,
-    Changed,
-    Unchanged,
-}
-
-impl FilterMode {
-    const NAMED_VARIANTS: &[(Self, &'static str)] = &[
-        (Self::Greater, "Greater"),
-        (Self::GreaterEq, "Greater or Equal"),
-        (Self::Less, "Less"),
-        (Self::LessEq, "Less or Equal"),
-        (Self::Equal, "Equal"),
-        (Self::NotEqual, "Not equal"),
-        (Self::Changed, "Changed"),
-        (Self::Unchanged, "Unchanged"),
-    ];
-
-    fn label(&self) -> &'static str {
-        Self::NAMED_VARIANTS
-            .iter()
-            .find_map(|(v, s)| if v == self { Some(*s) } else { None })
-            .unwrap()
-    }
-}
-
-#[derive(Debug)]
-struct SearchResult {
-    // This should optimize memory usage for large amount of offsets,
-    // We aren't modifying them anyways.
-    parent_offsets: Rc<Vec<usize>>,
-    offset: usize,
-    last_value: Value,
-}
-
-impl SearchResult {
-    pub fn should_remain(
-        &mut self,
-        p: &Process,
-        mut address: usize,
-        filter: FilterMode,
-        new_value: Value,
-    ) -> bool {
-        let mut buf = [0; 8];
-
-        for offset in self.parent_offsets.iter() {
-            p.read(address + offset, &mut buf[..]);
-            address = usize::from_ne_bytes(buf);
-        }
-        p.read(address + self.offset, &mut buf[..]);
-        address = usize::from_ne_bytes(buf);
-
-        p.read(address, &mut buf[..]);
-
-        let current_value = bytes_to_value(&buf, self.last_value.kind());
-        let result = match filter {
-            FilterMode::Less => current_value < new_value,
-            FilterMode::LessEq => current_value <= new_value,
-            FilterMode::Greater => current_value > new_value,
-            FilterMode::GreaterEq => current_value >= new_value,
-            FilterMode::Equal => current_value == new_value,
-            FilterMode::NotEqual => current_value != new_value,
-            FilterMode::Changed => current_value != self.last_value,
-            FilterMode::Unchanged => current_value == self.last_value,
-        };
-
-        self.last_value = current_value;
-        result
-    }
-}
-
-struct SearchOptions {
-    offsets: Rc<Vec<usize>>,
-    struct_size: usize,
-    alignment: usize,
-    address: usize,
-    depth: usize,
-    value: Value,
-}
+use std::{iter::repeat, sync::Arc, time::Instant};
 
 pub struct SpiderWindow {
     state: StateRef,
@@ -223,11 +140,11 @@ impl SpiderWindow {
                         .add_sized(vec2(w + 8., 12.), Button::new("First search"))
                         .clicked()
                     {
-                        let opts = self.collect_options()?;
+                        // let opts = self.collect_options()?;
 
-                        let time = Instant::now();
-                        recursive_first_search(process, &mut self.results, &opts);
-                        self.last_time = Some(time.elapsed().as_secs_f32())
+                        // let time = Instant::now();
+                        // recursive_first_search(process, &mut self.results, &opts);
+                        // self.last_time = Some(time.elapsed().as_secs_f32())
                     }
                 } else {
                     ui.horizontal(|ui| {
@@ -387,7 +304,7 @@ impl SpiderWindow {
         let value = parse_kind_to_value(self.field_kind, &self.value_buf)?;
 
         Ok(SearchOptions {
-            offsets: Rc::default(),
+            offsets: Arc::default(),
             struct_size,
             alignment,
             address,
@@ -395,103 +312,4 @@ impl SpiderWindow {
             value,
         })
     }
-}
-
-fn recursive_first_search(
-    process: &Process,
-    results: &mut Vec<SearchResult>,
-    opts: &SearchOptions,
-) {
-    if opts.depth == 0 {
-        return;
-    }
-
-    let start = opts.address
-        + if opts.address % opts.alignment == 0 {
-            0
-        } else {
-            opts.alignment - opts.address % opts.alignment
-        };
-
-    for address in (start..start + opts.struct_size).step_by(opts.alignment) {
-        let mut buf = [0; 8];
-        process.read(address, &mut buf[..]);
-
-        if address % 8 == 0 && process.can_read(usize::from_ne_bytes(buf)) {
-            recursive_first_search(
-                process,
-                results,
-                &SearchOptions {
-                    offsets: Rc::new(
-                        opts.offsets
-                            .iter()
-                            .copied()
-                            .chain([address - start])
-                            .collect(),
-                    ),
-                    address: usize::from_ne_bytes(buf),
-                    struct_size: opts.struct_size,
-                    alignment: opts.alignment,
-                    depth: opts.depth - 1,
-                    value: opts.value,
-                },
-            );
-        }
-
-        let value = bytes_to_value(&buf, opts.value.kind());
-
-        if value == opts.value {
-            results.push(SearchResult {
-                parent_offsets: opts.offsets.clone(),
-                offset: address - start,
-                last_value: value,
-            });
-        }
-    }
-}
-
-fn bytes_to_value(arr: &[u8; 8], kind: FieldKind) -> Value {
-    macro_rules! into_value {
-        ($s:ident, $type:ty) => {
-            <$type>::from_ne_bytes(arr[..std::mem::size_of::<$type>()].try_into().unwrap()).into()
-        };
-    }
-
-    match kind {
-        FieldKind::I8 => into_value!(s, i8),
-        FieldKind::I16 => into_value!(s, i16),
-        FieldKind::I32 => into_value!(s, i32),
-        FieldKind::I64 => into_value!(s, i64),
-        FieldKind::U8 => into_value!(s, u8),
-        FieldKind::U16 => into_value!(s, u16),
-        FieldKind::U32 => into_value!(s, u32),
-        FieldKind::U64 => into_value!(s, u64),
-        FieldKind::F32 => into_value!(s, f32),
-        FieldKind::F64 => into_value!(s, f64),
-        _ => unreachable!(),
-    }
-}
-
-fn parse_kind_to_value(kind: FieldKind, s: &str) -> eyre::Result<Value> {
-    macro_rules! into_value {
-        ($s:ident, $type:ty) => {
-            $s.parse::<$type>()
-                .map_err(|e| eyre::eyre!("Value: {e}"))?
-                .into()
-        };
-    }
-
-    Ok(match kind {
-        FieldKind::I8 => into_value!(s, i8),
-        FieldKind::I16 => into_value!(s, i16),
-        FieldKind::I32 => into_value!(s, i32),
-        FieldKind::I64 => into_value!(s, i64),
-        FieldKind::U8 => into_value!(s, u8),
-        FieldKind::U16 => into_value!(s, u16),
-        FieldKind::U32 => into_value!(s, u32),
-        FieldKind::U64 => into_value!(s, u64),
-        FieldKind::F32 => into_value!(s, f32),
-        FieldKind::F64 => into_value!(s, f64),
-        _ => unreachable!(),
-    })
 }
