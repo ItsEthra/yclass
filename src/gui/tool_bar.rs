@@ -255,6 +255,8 @@ impl ToolBarPanel {
             .borrow()
             .process
             .as_ref()
+            .read()
+            .as_ref()
             .map(|p| (p.name(), p.id()))
         {
             match proc_name {

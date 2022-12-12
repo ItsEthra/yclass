@@ -29,7 +29,7 @@ impl InspectorPanel {
                 ui.style_mut().override_font_id = Some(FontId::monospace(16.));
 
                 let state = self.state.borrow();
-                if state.process.is_none() {
+                if state.process.read().is_none() {
                     ui.centered_and_justified(|ui| {
                         ui.heading("Attach to a process to begin inspection.");
                     });
@@ -85,9 +85,10 @@ impl InspectorPanel {
         let state = &mut *self.state.borrow_mut();
         let rng = Rng::with_seed(0);
 
+        let process_lock = state.process.read();
         let mut ctx = InspectionContext {
             current_container: state.class_list.selected()?,
-            process: state.process.as_ref()?,
+            process: process_lock.as_ref()?,
             address: state.inspect_address,
             class_list: &state.class_list,
             selection: state.selection,

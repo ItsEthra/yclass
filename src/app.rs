@@ -61,17 +61,27 @@ impl App for YClassApp {
                 }) = state.selection
                 {
                     let class = state.class_list.by_id_mut(container_id).unwrap();
+                    let mut discrd_sel = false;
                     let pos = class
                         .fields
                         .iter()
-                        .position(|f| f.id() == field_id)
+                        .position(|f| {
+                            discrd_sel |= state
+                                .selection
+                                .map(|s| s.field_id == f.id())
+                                .unwrap_or(false);
+
+                            f.id() == field_id
+                        })
                         .unwrap();
+                    if discrd_sel {
+                        state.selection = None;
+                    }
 
                     let from = pos.min(class.fields.len());
                     let to = (pos + n).min(class.fields.len());
 
                     class.fields.drain(from..to);
-
                     state.dummy = false;
                 }
             }
@@ -159,36 +169,54 @@ impl App for YClassApp {
                 }
             }
             Some(ToolBarResponse::ProcessDetach) => {
-                self.state.borrow_mut().process = None;
-                frame.set_window_title("YClass");
+                let mut state = self.state.borrow_mut();
+
+                if let Some(mut process) = state
+                    .process
+                    .clone() /* ??? */
+                    .try_write()
+                {
+                    *process = None;
+                    frame.set_window_title("YClass");
+                } else {
+                    state.toasts.warning("Process is currently in use");
+                }
             }
             Some(ToolBarResponse::ProcessAttach(pid)) => {
-                let state = &mut *self.state.borrow_mut();
+                let mut state = self.state.borrow_mut();
 
-                match Process::attach(pid, &state.config) {
-                    Ok(proc) => {
-                        frame.set_window_title(&format!("YClass - Attached to {pid}"));
-                        if let Process::Internal((op, _)) = &proc {
-                            match op.name() {
-                                Ok(name) => {
-                                    state.config.last_attached_process_name = Some(name);
-                                    state.config.save();
-                                }
-                                Err(e) => {
-                                    _ = state
-                                        .toasts
-                                        .error(format!("Failed to get process name: {e}"))
+                if let Some(mut process) = state
+                    .process
+                    .clone() /* ??? */
+                    .try_write()
+                {
+                    match Process::attach(pid, &state.config) {
+                        Ok(proc) => {
+                            frame.set_window_title(&format!("YClass - Attached to {pid}"));
+                            if let Process::Internal((op, _)) = &proc {
+                                match op.name() {
+                                    Ok(name) => {
+                                        state.config.last_attached_process_name = Some(name);
+                                        state.config.save();
+                                    }
+                                    Err(e) => {
+                                        _ = state
+                                            .toasts
+                                            .error(format!("Failed to get process name: {e}"))
+                                    }
                                 }
                             }
-                        }
 
-                        state.process = Some(proc);
+                            *process = Some(proc);
+                        }
+                        Err(e) => {
+                            state.toasts.error(format!(
+                                "Failed to attach to process.\nPossibly plugin error.\n{e}"
+                            ));
+                        }
                     }
-                    Err(e) => {
-                        state.toasts.error(format!(
-                            "Failed to attach to process.\nPossibly plugin error.\n{e}"
-                        ));
-                    }
+                } else {
+                    state.toasts.warning("Process is currently in use");
                 }
             }
             None => {}
