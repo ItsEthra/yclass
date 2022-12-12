@@ -61,17 +61,27 @@ impl App for YClassApp {
                 }) = state.selection
                 {
                     let class = state.class_list.by_id_mut(container_id).unwrap();
+                    let mut discrd_sel = false;
                     let pos = class
                         .fields
                         .iter()
-                        .position(|f| f.id() == field_id)
+                        .position(|f| {
+                            discrd_sel |= state
+                                .selection
+                                .map(|s| s.field_id == f.id())
+                                .unwrap_or(false);
+
+                            f.id() == field_id
+                        })
                         .unwrap();
+                    if discrd_sel {
+                        state.selection = None;
+                    }
 
                     let from = pos.min(class.fields.len());
                     let to = (pos + n).min(class.fields.len());
 
                     class.fields.drain(from..to);
-
                     state.dummy = false;
                 }
             }
