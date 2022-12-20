@@ -1,13 +1,20 @@
 use crate::{app::is_valid_ident, state::StateRef};
 use eframe::{
-    egui::{Button, Context, ScrollArea, SidePanel, TextEdit},
+    egui::{Context, Key, ScrollArea, SelectableLabel, SidePanel, TextEdit},
     epaint::vec2,
 };
 use std::mem::take;
 
+struct ClassEditState {
+    request_focus: bool,
+    new_name: String,
+    id: usize,
+}
+
 pub struct ClassListPanel {
     new_class_buf: String,
-    edit_state: Option<(String, bool, usize)>,
+    edit_state: Option<ClassEditState>,
+    should_focus_edit: bool,
     state: StateRef,
 }
 
@@ -16,6 +23,7 @@ impl ClassListPanel {
         Self {
             state,
             edit_state: None,
+            should_focus_edit: false,
             new_class_buf: "".to_owned(),
         }
     }
@@ -24,7 +32,8 @@ impl ClassListPanel {
         SidePanel::left("_class_list").show(ctx, |ui| {
             ui.add_space(4.);
             ui.vertical_centered_justified(|ui| {
-                ui.heading("Class list");
+                ui.heading("Class list")
+                    .on_hover_text("Press ENTER to create a new class");
             });
             ui.add_space(4.);
 
@@ -35,30 +44,16 @@ impl ClassListPanel {
                 .show(ui)
                 .response;
 
-            ui.vertical_centered_justified(|ui| {
-                ui.set_enabled(state.class_list.selected().is_some());
-
-                let w = ui.available_width();
-                if ui.add_sized(vec2(w, 18.), Button::new("Rename")).clicked() {
-                    self.edit_state = Some((
-                        state.class_list.selected_class().unwrap().name.clone(),
-                        false,
-                        state.class_list.selected().unwrap(),
-                    ));
-                }
-
-                if ui.add_sized(vec2(w, 18.), Button::new("Delete")).clicked() {
-                    state
-                        .class_list
-                        .delete_by_id(state.class_list.selected().unwrap());
-                }
-            });
+            if self.should_focus_edit {
+                r.request_focus();
+                self.should_focus_edit = false;
+            }
 
             ui.add_space(4.);
             ui.separator();
             ui.add_space(4.);
 
-            if r.clicked_elsewhere() {
+            if r.clicked_elsewhere() || (ui.input().key_pressed(Key::Escape) && r.lost_focus()) {
                 self.new_class_buf.clear();
             } else if r.lost_focus() && !self.new_class_buf.is_empty() {
                 if state
@@ -72,6 +67,7 @@ impl ClassListPanel {
                         .error("Class with the same name already exists");
                 } else if !is_valid_ident(&self.new_class_buf) {
                     state.toasts.error("Not a valid class name");
+                    self.should_focus_edit = true;
                 } else {
                     state.class_list.add_class(take(&mut self.new_class_buf));
                     state.dummy = false;
@@ -81,26 +77,32 @@ impl ClassListPanel {
             ui.vertical_centered_justified(|ui| {
                 ScrollArea::vertical().show(ui, |ui| {
                     let selected = state.class_list.selected();
-                    let mut new_selection = None;
+                    let mut clicked_class = None;
+                    let mut delete_class = None;
+
                     for class in state.class_list.classes_mut() {
-                        if let Some((edit_buf, focused)) =
-                            self.edit_state.as_mut().and_then(|(buf, focused, j)| {
-                                if *j == class.id() {
-                                    Some((buf, focused))
+                        if let Some((edit_buf, request_focus)) = self.edit_state.as_mut().and_then(
+                            |ClassEditState {
+                                 id,
+                                 new_name,
+                                 request_focus,
+                             }| {
+                                if *id == class.id() {
+                                    Some((new_name, request_focus))
                                 } else {
                                     None
                                 }
-                            })
-                        {
+                            },
+                        ) {
                             let r = TextEdit::singleline(edit_buf)
                                 .desired_width(f32::INFINITY)
                                 .hint_text("New name")
                                 .show(ui)
                                 .response;
 
-                            let first_frame = if !*focused {
+                            let first_frame = if *request_focus {
                                 r.request_focus();
-                                *focused = true;
+                                *request_focus = false;
                                 true
                             } else {
                                 false
@@ -111,7 +113,7 @@ impl ClassListPanel {
                             } else if r.lost_focus() {
                                 if !is_valid_ident(&*edit_buf) {
                                     state.toasts.error("Not a valid class name");
-                                    *focused = false;
+                                    *request_focus = true;
                                 } else {
                                     class.name = take(edit_buf);
                                     self.edit_state = None;
@@ -119,25 +121,53 @@ impl ClassListPanel {
                                 }
                             }
                         } else {
-                            let r = ui.selectable_label(
-                                selected.map(|j| class.id() == j).unwrap_or_default(),
-                                &class.name,
+                            let r = ui.add_sized(
+                                vec2(ui.available_width(), 24.),
+                                SelectableLabel::new(
+                                    selected.map(|j| class.id() == j).unwrap_or_default(),
+                                    &class.name,
+                                ),
                             );
 
-                            if r.secondary_clicked() {
-                                self.edit_state = Some((class.name.clone(), false, class.id()));
-                            } else if r.clicked() {
-                                if selected == Some(class.id()) {
-                                    new_selection = Some(None);
-                                } else {
-                                    new_selection = Some(Some(class.id()));
-                                }
+                            if r.clicked() {
+                                clicked_class = Some(class.id());
                             }
+
+                            r.context_menu(|ui| {
+                                ui.set_width(80.);
+
+                                ui.vertical_centered_justified(|ui| {
+                                    if ui.button("Rename").clicked() {
+                                        ui.close_menu();
+
+                                        self.edit_state = Some(ClassEditState {
+                                            new_name: class.name.clone(),
+                                            request_focus: true,
+                                            id: class.id(),
+                                        });
+                                    }
+
+                                    if ui.button("Delete").clicked() {
+                                        ui.close_menu();
+
+                                        delete_class = Some(class.id());
+                                    }
+                                });
+                            });
                         }
                     }
 
-                    if let Some(new) = new_selection {
-                        *state.class_list.selected_mut() = new;
+                    if let Some(delete) = delete_class {
+                        state.class_list.delete_by_id(delete);
+                    }
+
+                    if let Some(new) = clicked_class {
+                        let selected = state.class_list.selected_mut();
+                        if *selected == Some(new) {
+                            *selected = None;
+                        } else {
+                            *selected = Some(new);
+                        }
                     }
                 });
             });
