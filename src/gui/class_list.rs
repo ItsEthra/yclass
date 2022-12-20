@@ -1,9 +1,14 @@
-use crate::{app::is_valid_ident, state::StateRef};
+use crate::{app::is_valid_ident, class::ClassId, state::StateRef};
 use eframe::{
-    egui::{Context, Key, ScrollArea, SelectableLabel, SidePanel, TextEdit},
+    egui::{Button, Context, Key, ScrollArea, SelectableLabel, SidePanel, TextEdit},
     epaint::vec2,
 };
 use std::mem::take;
+
+enum RequestedAction {
+    Delete(ClassId),
+    ToggleSelection(ClassId),
+}
 
 struct ClassEditState {
     request_focus: bool,
@@ -49,6 +54,14 @@ impl ClassListPanel {
                 self.should_focus_edit = false;
             }
 
+            // Without `horizontal_top` scroll bar appears at ScrollArea for some reason.
+            ui.horizontal_top(|ui| {
+                let size = vec2(ui.available_width(), 18.);
+                if ui.add_sized(size, Button::new("Remove empty")).clicked() {
+                    state.class_list.remove_empty();
+                }
+            });
+
             ui.add_space(4.);
             ui.separator();
             ui.add_space(4.);
@@ -77,8 +90,7 @@ impl ClassListPanel {
             ui.vertical_centered_justified(|ui| {
                 ScrollArea::vertical().show(ui, |ui| {
                     let selected = state.class_list.selected();
-                    let mut clicked_class = None;
-                    let mut delete_class = None;
+                    let mut action = None;
 
                     for class in state.class_list.classes_mut() {
                         if let Some((edit_buf, request_focus)) = self.edit_state.as_mut().and_then(
@@ -130,7 +142,7 @@ impl ClassListPanel {
                             );
 
                             if r.clicked() {
-                                clicked_class = Some(class.id());
+                                action = Some(RequestedAction::ToggleSelection(class.id()));
                             }
 
                             r.context_menu(|ui| {
@@ -150,25 +162,26 @@ impl ClassListPanel {
                                     if ui.button("Delete").clicked() {
                                         ui.close_menu();
 
-                                        delete_class = Some(class.id());
+                                        action = Some(RequestedAction::Delete(class.id()));
                                     }
                                 });
                             });
                         }
                     }
 
-                    if let Some(delete) = delete_class {
-                        state.class_list.delete_by_id(delete);
-                    }
-
-                    if let Some(new) = clicked_class {
-                        let selected = state.class_list.selected_mut();
-                        if *selected == Some(new) {
-                            *selected = None;
-                        } else {
-                            *selected = Some(new);
+                    match action.take()? {
+                        RequestedAction::Delete(cid) => state.class_list.delete_by_id(cid),
+                        RequestedAction::ToggleSelection(cid) => {
+                            let selected = state.class_list.selected_mut();
+                            if *selected == Some(cid) {
+                                *selected = None;
+                            } else {
+                                *selected = Some(cid);
+                            }
                         }
                     }
+
+                    Some(())
                 });
             });
         });

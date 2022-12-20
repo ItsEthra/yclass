@@ -36,6 +36,10 @@ impl Field for BoolField {
         1
     }
 
+    fn kind(&self) -> FieldKind {
+        FieldKind::Bool
+    }
+
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
         let mut val = 0u8;
         let address = ctx.address + ctx.offset;

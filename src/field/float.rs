@@ -31,6 +31,18 @@ impl<const N: usize> Field for FloatField<N> {
         N
     }
 
+    fn name(&self) -> Option<String> {
+        Some(self.state.name.borrow().clone())
+    }
+
+    fn kind(&self) -> FieldKind {
+        match N {
+            4 => FieldKind::F32,
+            8 => FieldKind::F64,
+            _ => unreachable!(),
+        }
+    }
+
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
         let mut buf = [0; N];
         let address = ctx.address + ctx.offset;
@@ -92,9 +104,5 @@ impl<const N: usize> Field for FloatField<N> {
             },
             None,
         );
-    }
-
-    fn name(&self) -> Option<String> {
-        Some(self.state.name.borrow().clone())
     }
 }
