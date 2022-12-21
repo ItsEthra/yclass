@@ -32,6 +32,7 @@ pub trait Field {
     fn id(&self) -> FieldId;
     fn name(&self) -> Option<String>;
     fn size(&self) -> usize;
+    fn kind(&self) -> FieldKind;
 
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse>;
     fn codegen(&self, generator: &mut dyn Generator, data: &CodegenData);

@@ -66,6 +66,24 @@ impl<const N: usize> Field for IntField<N> {
         N
     }
 
+    fn name(&self) -> Option<String> {
+        Some(self.state.name.borrow().clone())
+    }
+
+    fn kind(&self) -> FieldKind {
+        match N {
+            1 if self.signed => FieldKind::U8,
+            1 if !self.signed => FieldKind::I8,
+            2 if self.signed => FieldKind::U16,
+            2 if !self.signed => FieldKind::I16,
+            4 if self.signed => FieldKind::U32,
+            4 if !self.signed => FieldKind::I32,
+            8 if self.signed => FieldKind::U64,
+            8 if !self.signed => FieldKind::I64,
+            _ => unreachable!(),
+        }
+    }
+
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
         let mut buf = [0; N];
         let address = ctx.address + ctx.offset;
@@ -137,9 +155,5 @@ impl<const N: usize> Field for IntField<N> {
             },
             None,
         );
-    }
-
-    fn name(&self) -> Option<String> {
-        Some(self.state.name.borrow().clone())
     }
 }

@@ -1,5 +1,6 @@
 use super::{
-    create_text_format, display_field_prelude, next_id, CodegenData, Field, FieldId, FieldResponse,
+    create_text_format, display_field_prelude, next_id, CodegenData, Field, FieldId, FieldKind,
+    FieldResponse,
 };
 use crate::{context::InspectionContext, generator::Generator};
 use eframe::{
@@ -222,6 +223,20 @@ impl<const N: usize> Field for HexField<N> {
         N
     }
 
+    fn name(&self) -> Option<String> {
+        None
+    }
+
+    fn kind(&self) -> FieldKind {
+        match N {
+            1 => FieldKind::Unk8,
+            2 => FieldKind::Unk16,
+            4 => FieldKind::Unk32,
+            8 => FieldKind::Unk64,
+            _ => unreachable!(),
+        }
+    }
+
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
         let mut buf = [0; N];
         ctx.process.read(ctx.address + ctx.offset, &mut buf);
@@ -248,10 +263,6 @@ impl<const N: usize> Field for HexField<N> {
 
     fn codegen(&self, generator: &mut dyn Generator, _: &CodegenData) {
         generator.add_offset(self.size());
-    }
-
-    fn name(&self) -> Option<String> {
-        None
     }
 }
 

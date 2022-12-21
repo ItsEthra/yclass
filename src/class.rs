@@ -1,4 +1,4 @@
-use crate::field::{Field, HexField};
+use crate::field::{Field, FieldKind, HexField};
 use std::iter::repeat_with;
 
 pub type ClassId = usize;
@@ -59,6 +59,17 @@ impl ClassList {
 
     pub fn classes_mut(&mut self) -> &mut [Class] {
         &mut self.classes[..]
+    }
+
+    pub fn remove_empty(&mut self) {
+        self.classes.retain(|c| {
+            !c.fields.iter().all(|f| {
+                f.kind() == FieldKind::Unk8
+                    || f.kind() == FieldKind::Unk16
+                    || f.kind() == FieldKind::Unk32
+                    || f.kind() == FieldKind::Unk64
+            })
+        });
     }
 
     pub fn add_empty_class(&mut self, name: String) -> usize {

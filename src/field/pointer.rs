@@ -181,6 +181,14 @@ impl Field for PointerField {
         8
     }
 
+    fn name(&self) -> Option<String> {
+        Some(self.state.name.borrow().clone())
+    }
+
+    fn kind(&self) -> FieldKind {
+        FieldKind::Ptr
+    }
+
     fn draw(&self, ui: &mut Ui, ctx: &mut InspectionContext) -> Option<FieldResponse> {
         let mut response = None;
 
@@ -221,9 +229,5 @@ impl Field for PointerField {
                     .name,
             ),
         );
-    }
-
-    fn name(&self) -> Option<String> {
-        Some(self.state.name.borrow().clone())
     }
 }

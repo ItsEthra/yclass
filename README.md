@@ -35,6 +35,7 @@ cargo r --release
 * [x] - ~~Writing values.~~
 * [x] - ~~Save/Open project files.~~
 * [x] - ~~Pointer preview on hover with unknown fields.~~
+* [ ] - Show in which module pointer address falls.
 * [ ] - Disassembly of function pointers.
 
 # Plugin API
