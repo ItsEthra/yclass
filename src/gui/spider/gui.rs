@@ -8,6 +8,7 @@ use crate::{
     },
     process::Process,
     state::StateRef,
+    value::Value,
 };
 use eframe::{
     egui::{Button, ComboBox, Context, RichText, TextEdit, Ui, Window},
@@ -15,6 +16,32 @@ use eframe::{
 };
 use egui_extras::{Column, TableBuilder};
 use std::{borrow::Cow, iter::repeat, sync::Arc, time::Instant};
+
+enum DisplayMode {
+    Normal,
+    Hex,
+}
+
+impl DisplayMode {
+    fn format(&self, value: Value) -> String {
+        macro_rules! match_val {
+            ($value:ident, $fmt:literal, $($id:ident),*) => {
+                match $value {
+                    $(
+                        Value::$id(v) => format!($fmt, v),
+                    )*
+                    #[allow(unreachable_patterns)]
+                    _ => unreachable!(),
+                }
+            }
+        }
+
+        match self {
+            Self::Normal => match_val!(value, "{}", U8, I8, U16, I16, U32, I32, U64, I64, F32, F64),
+            Self::Hex => match_val!(value, "{:X}", U8, I8, U16, I16, U32, I32, U64, I64),
+        }
+    }
+}
 
 pub struct SpiderWindow {
     state: StateRef,
@@ -31,6 +58,7 @@ pub struct SpiderWindow {
     scanner_status: Option<Cow<'static, str>>,
     results: Vec<SearchResult>,
     filter: FilterMode,
+    display: DisplayMode,
 
     scanner: ScannerState,
 }
@@ -46,6 +74,7 @@ impl SpiderWindow {
             base_address: TextEditBind::new(|s| parse_address(s).ok_or(())),
             scanner: ScannerState::new(),
 
+            display: DisplayMode::Normal,
             filter: FilterMode::Equal,
             value_buf: String::new(),
             scanner_status: None,
@@ -161,10 +190,6 @@ impl SpiderWindow {
                     {
                         let opts = self.collect_options()?;
                         self.scanner.begin(&state.process, opts);
-
-                        // let time = Instant::now();
-                        // recursive_first_search(process, &mut self.results, &opts);
-                        // self.last_time = Some(time.elapsed().as_secs_f32())
                     }
                 } else {
                     ui.horizontal(|ui| {
@@ -178,7 +203,6 @@ impl SpiderWindow {
                                 }
                             });
 
-                        // Size: 1024, Depth: 4 => 7.08s
                         if let Some(status) = self.scanner_status.as_deref() {
                             ui.separator();
                             ui.label(status);
@@ -212,6 +236,18 @@ impl SpiderWindow {
                             if ui.button("Clear results").clicked() {
                                 self.results.clear();
                                 self.scanner_status = None;
+                            }
+
+                            // This looks a bit nasty but *shrug*
+                            let mut as_hex = matches!(self.display, DisplayMode::Hex);
+                            if !matches!(self.field_kind, FieldKind::F32 | FieldKind::F64)
+                                && ui.checkbox(&mut as_hex, "Show as hex").changed()
+                            {
+                                if as_hex {
+                                    self.display = DisplayMode::Hex;
+                                } else {
+                                    self.display = DisplayMode::Normal;
+                                }
                             }
 
                             if !self.scanner.active() {
@@ -279,7 +315,7 @@ impl SpiderWindow {
                     }
 
                     // Display last value
-                    row.col(|ui| _ = ui.label(format!("{}", result.last_value)));
+                    row.col(|ui| _ = ui.label(self.display.format(result.last_value)));
 
                     let mut address = address;
                     let mut buf = [0; 8];
@@ -295,11 +331,12 @@ impl SpiderWindow {
 
                     // Display current value
                     let current = bytes_to_value(&buf, result.last_value.kind());
+                    let text = self.display.format(current);
                     row.col(|ui| {
                         if current != result.last_value {
-                            ui.label(RichText::new(current.to_string()).color(Color32::KHAKI));
+                            ui.label(RichText::new(text).color(Color32::KHAKI));
                         } else {
-                            ui.label(current.to_string());
+                            ui.label(text);
                         }
                     });
                 })

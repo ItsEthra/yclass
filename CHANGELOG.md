@@ -6,6 +6,7 @@
 * Added hotkeys for attaching to/detaching from processes.
 * Added structure spider, tool that searches through multilevel pointers for values.
 * Added button to remove all empty classes.
+* Added hex view to spider window on integer types.
 ## Changed
 * Removed buttons to rename & delete classes and moved functionality to the context menu instead.
 ## Fixes
