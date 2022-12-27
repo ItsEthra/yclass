@@ -9,6 +9,7 @@
 * Added hex view to spider window on integer types.
 ## Changed
 * Removed buttons to rename & delete classes and moved functionality to the context menu instead.
+* Interpret `0x` prefixed values in spider window as hexidecimal.
 ## Fixes
 * Fixed field ids, yclass should no longer crash when inspecting nested pointers.
 * Added hotkeys for attaching to/detaching from processes.

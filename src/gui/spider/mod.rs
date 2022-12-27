@@ -117,9 +117,15 @@ fn bytes_to_value(arr: &[u8; 8], kind: FieldKind) -> Value {
 fn parse_kind_to_value(kind: FieldKind, s: &str) -> eyre::Result<Value> {
     macro_rules! into_value {
         ($s:ident, $type:ty) => {
-            $s.parse::<$type>()
-                .map_err(|e| eyre::eyre!("Value: {e}"))?
-                .into()
+            if let Some(tail) = $s.strip_prefix("0x") {
+                <$type>::from_str_radix(tail, 16)
+                    .map_err(|e| eyre::eyre!("Value: {e}"))?
+                    .into()
+            } else {
+                $s.parse::<$type>()
+                    .map_err(|e| eyre::eyre!("Value: {e}"))?
+                    .into()
+            }
         };
     }
 
@@ -132,8 +138,14 @@ fn parse_kind_to_value(kind: FieldKind, s: &str) -> eyre::Result<Value> {
         FieldKind::U16 => into_value!(s, u16),
         FieldKind::U32 => into_value!(s, u32),
         FieldKind::U64 => into_value!(s, u64),
-        FieldKind::F32 => into_value!(s, f32),
-        FieldKind::F64 => into_value!(s, f64),
+        FieldKind::F32 => s
+            .parse::<f32>()
+            .map_err(|e| eyre::eyre!("Value: {e}"))?
+            .into(),
+        FieldKind::F64 => s
+            .parse::<f64>()
+            .map_err(|e| eyre::eyre!("Value: {e}"))?
+            .into(),
         _ => unreachable!(),
     })
 }

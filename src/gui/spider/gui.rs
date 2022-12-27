@@ -172,6 +172,7 @@ impl SpiderWindow {
 
                 let w = ui.available_width() / 2.;
                 show_edit(true, ui, &mut self.base_address, "Base address");
+
                 ui.horizontal(|ui| {
                     ui.add(TextEdit::singleline(&mut self.value_buf).desired_width(w));
                     if self.results.is_empty() {
