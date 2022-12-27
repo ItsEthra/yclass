@@ -13,3 +13,4 @@
 * Fixed field ids, yclass should no longer crash when inspecting nested pointers.
 * Added hotkeys for attaching to/detaching from processes.
 * Fixed multiple crashes.
+* Fixed sometimes wrong values in spider view.

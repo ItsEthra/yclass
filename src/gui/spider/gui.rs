@@ -323,11 +323,7 @@ impl SpiderWindow {
                         process.read(address + offset, &mut buf[..]);
                         address = usize::from_ne_bytes(buf);
                     }
-
                     process.read(address + result.offset, &mut buf[..]);
-                    address = usize::from_ne_bytes(buf);
-
-                    process.read(address, &mut buf[..]);
 
                     // Display current value
                     let current = bytes_to_value(&buf, result.last_value.kind());
