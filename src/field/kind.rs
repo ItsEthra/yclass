@@ -1,4 +1,4 @@
-use super::{BoolField, Field, FloatField, HexField, IntField, PointerField};
+use super::{BoolField, Field, FloatField, HexField, IntField, PointerField, StringPointerField};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -9,6 +9,7 @@ pub enum FieldKind {
     U8, U16, U32, U64,
     F32, F64,
     Ptr,
+    StrPtr,
     Bool,
 }
 
@@ -41,7 +42,7 @@ impl FieldKind {
             Self::Unk16 | Self::I16 | Self::U16 => 2,
             Self::Unk32 | Self::I32 | Self::U32 | Self::F32 => 4,
             // TODO(ItsEthra): Pointer size is... sigh, different for 32-bit processes
-            Self::Unk64 | Self::I64 | Self::U64 | Self::F64 | Self::Ptr => 8,
+            Self::Unk64 | Self::I64 | Self::U64 | Self::F64 | Self::Ptr | Self::StrPtr => 8,
         }
     }
 
@@ -79,6 +80,9 @@ impl FieldKind {
             )),
             Self::Bool => Box::new(BoolField::new(name.unwrap_or_else(|| "boolean".into()))),
             Self::Ptr => Box::new(PointerField::new(name.unwrap_or_else(|| "pointer".into()))),
+            Self::StrPtr => Box::new(StringPointerField::new(
+                name.unwrap_or_else(|| "str_ptr".into()),
+            )),
         }
     }
 }
