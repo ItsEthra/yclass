@@ -300,7 +300,7 @@ impl ToolBarPanel {
         ui.separator();
         ui.add_space(2.);
 
-        create_change_field_type_group!(ui, response, BLACK, BROWN, Ptr);
+        create_change_field_type_group!(ui, response, BLACK, BROWN, Ptr, StrPtr);
     }
 }
 

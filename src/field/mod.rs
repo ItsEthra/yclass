@@ -10,6 +10,8 @@ mod float;
 pub use float::*;
 mod pointer;
 pub use pointer::*;
+mod string_pointer;
+pub use string_pointer::*;
 mod boolean;
 pub use boolean::*;
 
