@@ -74,8 +74,8 @@ impl Field for StringPointerField {
                             .iter()
                             .position(|c| *c == b'\0')
                             .unwrap_or(str_buf.len());
-                        let str = std::str::from_utf8(&str_buf[..str_end])
-                            .unwrap_or_else(|_| "non utf-8 sequence");
+                        let str = std::string::String::from_utf8_lossy(&str_buf[..str_end]);
+
                         if v {
                             format!("{str:?}")
                         } else {
