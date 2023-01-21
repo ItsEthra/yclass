@@ -54,12 +54,6 @@ impl Field for StringPointerField {
 
         let mut str_buf = [0; 64];
         ctx.process.read(address, &mut str_buf);
-        // Sanitize string to prevent control characters like \n, \t, etc. from being displayed
-        str_buf.iter_mut().for_each(|c| {
-            if *c != b'\0' && *c < b' ' {
-                *c = b'_'
-            }
-        });
 
         ui.horizontal(|ui| {
             let mut job = LayoutJob::default();
@@ -83,9 +77,9 @@ impl Field for StringPointerField {
                         let str = std::str::from_utf8(&str_buf[..str_end])
                             .unwrap_or_else(|_| "non utf-8 sequence");
                         if v {
-                            format!("{str}")
+                            format!("{str:?}")
                         } else {
-                            format!("-> \"{str}\"")
+                            format!("-> {str:?}")
                         }
                     },
                     |_| false,
