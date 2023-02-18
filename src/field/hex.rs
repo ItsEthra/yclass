@@ -170,13 +170,13 @@ impl<const N: usize> HexField<N> {
                     if preview.address == ctx.address + ctx.offset {
                         if !preview.shown {
                             ui.ctx().request_repaint();
-                            preview.hover_time += ui.input().stable_dt;
+                            preview.hover_time += ui.input(|i| i.stable_dt);
                             if preview.hover_time >= 0.3 {
                                 preview.shown = true;
                                 *response = Some(FieldResponse::LockScroll);
                             }
                         } else {
-                            let yd = ui.input().scroll_delta.y;
+                            let yd = ui.input(|i| i.scroll_delta.y);
                             if yd < 0. {
                                 preview.offest = preview.offest.saturating_add(8);
                             } else if yd > 0. {

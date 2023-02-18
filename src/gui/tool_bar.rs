@@ -159,7 +159,7 @@ impl ToolBarPanel {
 
     fn run_hotkeys(&mut self, ctx: &Context, response: &mut Option<ToolBarResponse>) {
         let state = &mut *self.state.borrow_mut();
-        let input = &*ctx.input();
+        let input = &ctx.input(|i| i.clone());
 
         if state.hotkeys.pressed("attach_process", input) {
             self.ps_attach_window.toggle();

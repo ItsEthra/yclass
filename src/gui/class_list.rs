@@ -66,7 +66,8 @@ impl ClassListPanel {
             ui.separator();
             ui.add_space(4.);
 
-            if r.clicked_elsewhere() || (ui.input().key_pressed(Key::Escape) && r.lost_focus()) {
+            if r.clicked_elsewhere() || (ui.input(|i| i.key_pressed(Key::Escape)) && r.lost_focus())
+            {
                 self.new_class_buf.clear();
             } else if r.lost_focus() && !self.new_class_buf.is_empty() {
                 if state

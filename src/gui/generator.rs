@@ -66,7 +66,7 @@ impl GeneratorWindow {
 
                     if let Some(ref out) = self.output {
                         if ui.button("Copy to clipboard").clicked() {
-                            ui.ctx().output().copied_text = out.clone();
+                            ui.ctx().output_mut(|o| o.copied_text = out.clone());
                             self.state
                                 .borrow_mut()
                                 .toasts

@@ -99,7 +99,7 @@ impl PointerField {
 
         let r = ui.add(Label::new(job).sense(Sense::click()));
         if r.secondary_clicked() {
-            ui.memory().toggle_popup(Id::new(ctx.current_id))
+            ui.memory_mut(|m| m.toggle_popup(Id::new(ctx.current_id)));
         } else if r.clicked() {
             ctx.select(self.id);
         }

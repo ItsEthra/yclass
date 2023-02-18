@@ -53,7 +53,7 @@ impl InspectorPanel {
                         ui.spacing_mut().text_edit_width = self
                             .address_buffer
                             .chars()
-                            .map(|c| ui.fonts().glyph_width(&FID_M, c))
+                            .map(|c| ui.fonts(|f| f.glyph_width(&FID_M, c)))
                             .sum::<f32>()
                             .max(160.);
 

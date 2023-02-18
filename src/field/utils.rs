@@ -19,23 +19,20 @@ pub fn display_field_prelude(
             tf.underline = Stroke::new(1., Color32::RED);
         }
 
-        if egui_ctx.input().key_pressed(Key::C)
-            && egui_ctx.input().modifiers.matches(Modifiers::CTRL)
+        if egui_ctx.input(|i| i.key_pressed(Key::C))
+            && egui_ctx.input(|i| i.modifiers.matches(Modifiers::CTRL))
             && ctx.is_selected(field.id())
         {
-            egui_ctx.output().copied_text = format!("{:X}", ctx.address + ctx.offset);
+            egui_ctx.output_mut(|o| o.copied_text = format!("{:X}", ctx.address + ctx.offset));
         }
 
-        if egui_ctx.input().key_pressed(Key::C)
-            && egui_ctx
-                .input()
-                .modifiers
-                .matches(Modifiers::CTRL | Modifiers::SHIFT)
+        if egui_ctx.input(|i| i.key_pressed(Key::C))
+            && egui_ctx.input(|i| i.modifiers.matches(Modifiers::CTRL | Modifiers::SHIFT))
             && ctx.is_selected(field.id())
         {
             let mut buf = [0; 8];
             ctx.process.read(ctx.address + ctx.offset, &mut buf[..]);
-            egui_ctx.output().copied_text = format!("{:X}", usize::from_ne_bytes(buf));
+            egui_ctx.output_mut(|o| o.copied_text = format!("{:X}", usize::from_ne_bytes(buf)));
         }
 
         tf
@@ -69,7 +66,7 @@ pub fn display_field_value<T: Display>(
         if *address == ctx.address + ctx.offset {
             let mut w = buf
                 .chars()
-                .map(|c| ui.fonts().glyph_width(&FID_M, c))
+                .map(|c| ui.fonts(|f| f.glyph_width(&FID_M, c)))
                 .sum::<f32>();
             if w > 80. {
                 w += 10.
@@ -132,7 +129,7 @@ pub fn display_field_name(
         let name = &mut *state.name.borrow_mut();
         let w = name
             .chars()
-            .map(|c| ui.fonts().glyph_width(&FID_M, c))
+            .map(|c| ui.fonts(|f| f.glyph_width(&FID_M, c)))
             .sum::<f32>()
             .max(80.)
             + 32.;
