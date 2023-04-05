@@ -19,7 +19,7 @@ impl InspectorPanel {
         Self {
             state,
             allow_scroll: true,
-            address_buffer: format!("0x{:X}", state.borrow().inspect_address),
+            address_buffer: format!("0x{:X}", 0),
         }
     }
 
@@ -28,20 +28,22 @@ impl InspectorPanel {
             ui.scope(|ui| {
                 ui.style_mut().override_font_id = Some(FontId::monospace(16.));
 
-                let state = self.state.borrow();
-                if state.process.read().is_none() {
-                    ui.centered_and_justified(|ui| {
-                        ui.heading("Attach to a process to begin inspection.");
-                    });
-                    return;
+                {
+                    let state = self.state.borrow();
+                    if state.process.read().is_none() {
+                        ui.centered_and_justified(|ui| {
+                            ui.heading("Attach to a process to begin inspection.");
+                        });
+                        return;
+                    }
+
+                    if state.class_list.selected_class().is_none() {
+                        ui.centered_and_justified(|ui| {
+                            ui.heading("Select a class from the class list to begin inspection.");
+                        });
+                        return;
+                    }
                 }
-                if state.class_list.selected_class().is_none() {
-                    ui.centered_and_justified(|ui| {
-                        ui.heading("Select a class from the class list to begin inspection.");
-                    });
-                    return;
-                }
-                drop(state);
 
                 CollapsingState::load_with_default_open(ctx, Id::new("_inspector_panel"), true)
                     .show_header(ui, |ui| {
@@ -49,27 +51,25 @@ impl InspectorPanel {
                         let active_class = state.class_list.selected_class()?;
 
                         ui.label(format!("{} - ", active_class.name));
-
                         ui.spacing_mut().text_edit_width = self
                             .address_buffer
                             .chars()
                             .map(|c| ui.fonts(|f| f.glyph_width(&FID_M, c)))
                             .sum::<f32>()
                             .max(160.);
+                        let selected_class = state.class_list.selected_class().unwrap();
 
                         let r = ui.text_edit_singleline(&mut self.address_buffer);
                         if r.lost_focus() {
                             if let Some(addr) = parse_address(&self.address_buffer) {
-                                state.inspect_address = addr;
-                                #[cfg(debug_assertions)]
-                                {
-                                    state.config.last_address = Some(addr);
-                                    state.config.save();
-                                }
+                                selected_class.address.set(addr);
                             } else {
                                 state.toasts.error("Address is in invalid format");
                             }
-                            self.address_buffer = format!("0x{:X}", state.inspect_address);
+                        }
+
+                        if !r.has_focus() {
+                            self.address_buffer = format!("0x{:X}", selected_class.address.get());
                         }
 
                         Some(())
@@ -87,9 +87,9 @@ impl InspectorPanel {
 
         let process_lock = state.process.read();
         let mut ctx = InspectionContext {
+            address: state.class_list.selected_class()?.address.get(),
             current_container: state.class_list.selected()?,
             process: process_lock.as_ref()?,
-            address: state.inspect_address,
             class_list: &state.class_list,
             selection: state.selection,
             toasts: &mut state.toasts,

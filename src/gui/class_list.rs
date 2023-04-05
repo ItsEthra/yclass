@@ -1,4 +1,8 @@
-use crate::{app::is_valid_ident, class::ClassId, state::StateRef};
+use crate::{
+    app::is_valid_ident,
+    class::{Class, ClassId},
+    state::StateRef,
+};
 use eframe::{
     egui::{Button, Context, Key, ScrollArea, SelectableLabel, SidePanel, TextEdit},
     epaint::vec2,
@@ -93,20 +97,26 @@ impl ClassListPanel {
                     let selected = state.class_list.selected();
                     let mut action = None;
 
+                    fn map_state<'s>(
+                        class: &mut Class,
+                        state: &'s mut ClassEditState,
+                    ) -> Option<(&'s mut String, &'s mut bool)> {
+                        let ClassEditState {
+                            request_focus,
+                            new_name,
+                            id,
+                        } = state;
+                        if *id == class.id() {
+                            Some((new_name, request_focus))
+                        } else {
+                            None
+                        }
+                    }
+
                     for class in state.class_list.classes_mut() {
-                        if let Some((edit_buf, request_focus)) = self.edit_state.as_mut().and_then(
-                            |ClassEditState {
-                                 id,
-                                 new_name,
-                                 request_focus,
-                             }| {
-                                if *id == class.id() {
-                                    Some((new_name, request_focus))
-                                } else {
-                                    None
-                                }
-                            },
-                        ) {
+                        if let Some((edit_buf, request_focus)) =
+                            self.edit_state.as_mut().and_then(|s| map_state(class, s))
+                        {
                             let r = TextEdit::singleline(edit_buf)
                                 .desired_width(f32::INFINITY)
                                 .hint_text("New name")

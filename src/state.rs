@@ -19,7 +19,6 @@ pub struct GlobalState {
     pub selection: Option<Selection>,
     pub process: Arc<RwLock<Option<Process>>>,
     pub hotkeys: HotkeyManager,
-    pub inspect_address: usize,
     pub class_list: ClassList,
     pub config: YClassConfig,
     pub toasts: Toasts,
@@ -33,8 +32,6 @@ impl Default for GlobalState {
         let config = YClassConfig::load_or_default();
 
         Self {
-            #[cfg(debug_assertions)]
-            inspect_address: config.last_address.unwrap_or(0),
             hotkeys: HotkeyManager::default(),
             class_list: ClassList::default(),
             last_opened_project: None,
