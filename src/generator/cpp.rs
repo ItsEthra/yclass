@@ -73,7 +73,7 @@ fn kind_to_type(kind: FieldKind, metadata: Option<&str>) -> Cow<'static, str> {
         FieldKind::U64 => "uint64_t".into(),
         FieldKind::F32 => "float".into(),
         FieldKind::F64 => "double".into(),
-        FieldKind::Ptr => format!("{}*", metadata.unwrap()).into(),
+        FieldKind::Ptr => format!("{}*", metadata.unwrap_or("void")).into(),
         FieldKind::StrPtr => "const char*".into(),
         FieldKind::Bool => "bool".into(),
     }

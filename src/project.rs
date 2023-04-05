@@ -117,8 +117,8 @@ impl ProjectData {
 
                 match kind {
                     FieldKind::Ptr => {
-                        let refname = metadata.unwrap();
-                        if let Some(refclass) = list.by_name(&refname) {
+                        let classname = metadata.as_deref();
+                        if let Some(refclass) = classname.and_then(|name| list.by_name(name)) {
                             let refid = refclass.id();
                             let class = list.by_id_mut(cid).unwrap();
                             class
@@ -126,7 +126,11 @@ impl ProjectData {
                                 .push(Box::new(PointerField::new_with_class_id(name, refid))
                                     as Box<dyn Field>);
                         } else {
-                            let new_cid = list.add_class(refname);
+                            let new_cid = list.add_class(
+                                classname
+                                    .map(str::to_owned)
+                                    .unwrap_or_else(|| format!("C{:X}", field_offset)),
+                            );
                             let class = list.by_id_mut(cid).unwrap();
                             class
                                 .fields
