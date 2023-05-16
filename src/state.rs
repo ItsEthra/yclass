@@ -37,8 +37,6 @@ impl Default for GlobalState {
             last_opened_project: None,
             toasts: Toasts::default(),
             process: Arc::default(),
-            #[cfg(not(debug_assertions))]
-            inspect_address: 0,
             selection: None,
             dummy: true,
             config,
