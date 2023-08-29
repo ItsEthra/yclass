@@ -1,2 +1,3 @@
-/target/
-/*.yclass
+/**/target/
+/node_modules/
+/**/*.yclass

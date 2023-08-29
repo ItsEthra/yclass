@@ -1,0 +1,11 @@
+[package]
+name = "example"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "example"
+path = "main.rs"
+
+[dependencies]
+fastrand = "2.0.0"
