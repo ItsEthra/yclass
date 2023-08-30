@@ -1,7 +1,7 @@
-use error::Result;
 use serde::Serialize;
 
 mod error;
+pub use error::*;
 
 #[derive(Serialize)]
 pub struct ProcessEntry {
