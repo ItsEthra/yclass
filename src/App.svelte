@@ -1,4 +1,6 @@
 <script lang="ts">
 </script>
 
-<main />
+<main>
+    <p class="bg-red-500">Test</p>
+</main>

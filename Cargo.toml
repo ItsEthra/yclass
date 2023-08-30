@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "src-tauri",
-    "subject"
+    "yclass-core",
+    "subject",
 ]
 resolver = "2"
