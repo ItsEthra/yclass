@@ -34,7 +34,9 @@
 
     const attach = (entry: ProcessEntry) => {
         invoke("attach", { pid: entry.id })
-            .then(() => toast.success(`Attached to the ${entry.name}`))
+            .then(() =>
+                toast.success(`Attached to the ${entry.name} - ${entry.id}`)
+            )
             .catch((err) => toast.error(err));
     };
 </script>
@@ -48,7 +50,7 @@
                     .includes(filterName.toLowerCase()) || !filterName}
                     <button
                         on:click={() => attach(entry)}
-                        class="text-lg btn align-left hover:underline hover:cursor-pointer m-2"
+                        class="text-lg btn align-left hover:underline hover:cursor-pointer m-2 transition-all hover:btn-primary"
                     >
                         {shortenName(entry.name)} - {entry.id}
                     </button>
@@ -57,11 +59,13 @@
         </div>
 
         <div class="modal-action flex items-center gap-2">
+            <!-- svelte-ignore a11y-autofocus -->
             <input
                 bind:value={filterName}
                 type="text"
                 class="input input-bordered input-primary w-full"
                 placeholder="Name"
+                autofocus
             />
             <button class="btn btn-secondary" on:click={refresh} type="button">
                 <span class:animate-spin={loading}>
@@ -71,4 +75,3 @@
         </div>
     </form>
 </dialog>
-

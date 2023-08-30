@@ -6,12 +6,14 @@ use thiserror::Error;
 pub enum Error {
     #[error("Memflex: {0}")]
     Memflex(#[from] memflex::MfError),
-    #[error("Failed to evaulate")]
+    #[error("Failed to evaulate the expression")]
     AddrEval,
     #[error("Failed to find module {0}")]
     MissingModule(String),
     #[error("{0}")]
     Custom(Box<dyn error::Error>),
+    #[error("Not attached to the process")]
+    NotAttached,
 }
 
 impl Serialize for Error {

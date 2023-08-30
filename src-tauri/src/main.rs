@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::{async_runtime::Mutex, CustomMenuItem, Menu, State, Submenu};
-use yclass_core::{ProcessEntry, ProcessInterface, Result};
+use yclass_core::{Error, ProcessEntry, ProcessInterface, Result};
 
 #[derive(Default)]
 struct Globals {
@@ -28,6 +28,13 @@ async fn detach(state: State<Globals, '_>) -> Result<()> {
     Ok(())
 }
 
+#[tauri::command]
+async fn eval_address(expr: String, state: State<Globals, '_>) -> Result<usize> {
+    let lock = state.process.lock().await;
+    let proc = &**lock.as_ref().ok_or(Error::NotAttached)?;
+    dbg!(yclass_core::eval(&expr, proc))
+}
+
 fn create_menu() -> Menu {
     let mut process_attach_recent =
         CustomMenuItem::new("process_attach_recent", "Attach to recent");
@@ -51,7 +58,12 @@ fn main() {
             "process_attach" => {}
             _ => unreachable!(),
         })
-        .invoke_handler(tauri::generate_handler![list_processes, attach, detach])
+        .invoke_handler(tauri::generate_handler![
+            list_processes,
+            attach,
+            detach,
+            eval_address
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
