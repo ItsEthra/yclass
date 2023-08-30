@@ -1,0 +1,10 @@
+[package]
+name = "yclass-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+
+memflex = { version = "0.7.0", features = ["external"] }
+thiserror = "1.0.47"

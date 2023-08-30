@@ -2,6 +2,11 @@
 
 use std::{collections::LinkedList, iter::repeat_with, thread::park};
 
+#[cfg(unix)]
+extern "C" {
+    fn getpid() -> u32;
+}
+
 #[repr(C)]
 struct Foo {
     values: [u16; 10],
@@ -13,6 +18,9 @@ struct Foo {
 }
 
 fn main() {
+    #[cfg(unix)]
+    println!("Process ID: {}", unsafe { getpid() });
+
     let foo = Foo {
         values: repeat_with(|| fastrand::u16(..255))
             .take(10)
