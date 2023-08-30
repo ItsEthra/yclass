@@ -1,13 +1,17 @@
 use serde::Serialize;
-use std::result;
+use std::{error, result};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("Memflex: {0}")]
     Memflex(#[from] memflex::MfError),
-    #[error("Failed to ")]
-    Eval,
+    #[error("Failed to evaulate")]
+    AddrEval,
+    #[error("Failed to find module {0}")]
+    MissingModule(String),
+    #[error("{0}")]
+    Custom(Box<dyn error::Error>),
 }
 
 impl Serialize for Error {

@@ -1,12 +1,15 @@
 #![allow(dead_code)]
 
 use bytemuck::{bytes_of, bytes_of_mut, Pod};
-use memflex::external::OwnedProcess;
-use std::{error::Error, result};
+use memflex::{external::OwnedProcess, types::ModuleInfoWithName};
+use std::{error, result};
 
-type Result<T> = result::Result<T, Box<dyn Error>>;
+use crate::Error;
+
+type Result<T> = result::Result<T, Box<dyn error::Error>>;
 
 pub trait ProcessInterface: Send + Sync + 'static {
+    fn module_base(&self, name: Option<&str>) -> Result<usize>;
     fn read_buf(&self, address: usize, buf: &mut [u8]) -> Result<()>;
     fn write_buf(&self, address: usize, buf: &[u8]) -> Result<()>;
 }
@@ -34,5 +37,19 @@ impl ProcessInterface for OwnedProcess {
         OwnedProcess::write_buf(self, address, buf)?;
 
         Ok(())
+    }
+
+    fn module_base(&self, name: Option<&str>) -> Result<usize> {
+        // TODO: Find a way to reliably get process base on unix
+        #[cfg(unix)]
+        let else_base = |m: &ModuleInfoWithName| m.name == "subject";
+        #[cfg(windows)]
+        let else_base = |m: &ModuleInfoWithName| m.name.ends_with("exe");
+
+        let module = self
+            .modules()?
+            .find(|m| name.map(|n| m.name == n).unwrap_or_else(|| else_base(m)))
+            .ok_or_else(|| Error::MissingModule(name.unwrap().to_owned()))?;
+        Ok(module.base as usize)
     }
 }
