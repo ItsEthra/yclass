@@ -3625,18 +3625,20 @@ dependencies = [
 
 [[package]]
 name = "yclass"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
+ "yclass-core",
 ]
 
 [[package]]
 name = "yclass-core"
 version = "0.1.0"
 dependencies = [
+ "bytemuck",
  "memflex",
  "serde",
  "thiserror",

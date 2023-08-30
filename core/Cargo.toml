@@ -8,3 +8,4 @@ serde.workspace = true
 
 memflex = { version = "0.7.0", features = ["external"] }
 thiserror = "1.0.47"
+bytemuck = "1.13.1"

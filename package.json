@@ -11,7 +11,10 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@tauri-apps/api": "^1.4.0"
+    "@fortawesome/free-solid-svg-icons": "^6.4.2",
+    "@tauri-apps/api": "^1.4.0",
+    "svelte-fa": "^3.0.4",
+    "svelte-french-toast": "^1.2.0"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^2.4.2",

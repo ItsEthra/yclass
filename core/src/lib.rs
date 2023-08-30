@@ -1,5 +1,10 @@
+use memflex::external::find_process_by_id;
 use serde::Serialize;
 
+mod eval;
+pub use eval::*;
+mod interface;
+pub use interface::*;
 mod error;
 pub use error::*;
 
@@ -18,4 +23,9 @@ pub fn fetch_processes() -> Result<Vec<ProcessEntry>> {
             id: e.id,
         })
         .collect())
+}
+
+pub fn attach(pid: u32) -> Result<Box<dyn ProcessInterface>> {
+    let proc = find_process_by_id(pid)?;
+    Ok(Box::new(proc) as Box<dyn ProcessInterface>)
 }

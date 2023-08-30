@@ -8,13 +8,14 @@ repository.workspace = true
 edition.workspace = true
 
 [build-dependencies]
-tauri-build = "1.4."
+tauri-build = { version = "1.4", features = [] }
 
 [dependencies]
 serde.workspace = true
 
 tauri = { version = "1.4", features = ["shell-open"] }
 serde_json = "1.0"
+yclass-core = { version = "0.1.0", path = "../core" }
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]

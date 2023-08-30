@@ -1,3 +1,5 @@
+use serde::Serialize;
+use std::result;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -6,4 +8,13 @@ pub enum Error {
     MemflexError(#[from] memflex::MfError),
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+impl Serialize for Error {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        format!("{self}").serialize(serializer)
+    }
+}
+
+pub type Result<T> = result::Result<T, Error>;
