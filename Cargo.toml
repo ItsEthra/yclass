@@ -1,13 +1,15 @@
 [workspace]
 members = [
     "subject",
-    "core"
+    "core",
+    "src-tauri"
 ]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+authors = ["ItsEthra"]
 license = "MIT"
 repository = "https://github.com/ItsEthra/yclass"
 
