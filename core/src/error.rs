@@ -5,7 +5,9 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("Memflex: {0}")]
-    MemflexError(#[from] memflex::MfError),
+    Memflex(#[from] memflex::MfError),
+    #[error("Failed to ")]
+    Eval,
 }
 
 impl Serialize for Error {
