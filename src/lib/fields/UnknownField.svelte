@@ -2,20 +2,29 @@
     import { invoke } from "@tauri-apps/api";
     import { type Property } from "../../models";
     import { padString, arrayToInt, arrayToFloat } from "../../lib/utils";
+    import { faExclamation } from "@fortawesome/free-solid-svg-icons";
+    import Fa from "svelte-fa";
 
     export let property: Property;
     export let address: number;
     export let size: number;
 
     let data: Uint8Array = new Uint8Array(8);
+    let error = false;
 
     $: {
         invoke<Uint8Array>("read", {
             address: address + property.offset,
             count: size,
         })
-            .then((d) => (data = new Uint8Array(d)))
-            .catch((_) => (data = new Uint8Array(8)));
+            .then((d) => {
+                error = false;
+                data = new Uint8Array(d);
+            })
+            .catch((_) => {
+                error = true;
+                data = new Uint8Array(8);
+            });
     }
 
     const byteColor = (byte: number) => {
@@ -32,8 +41,19 @@
     };
 </script>
 
-<div class="flex">
-    <p class="text-yellow-300">{padString(property.offset.toString(16), 4)}</p>
+<div class="flex items-center">
+    {#if error}
+        <p class="mr-4 text-error">
+            <Fa size="lg" icon={faExclamation} />
+        </p>
+    {/if}
+
+    <p
+        class="text-yellow-300 decoration-error underline-offset-2 decoration-2"
+        class:underline={(address + property.offset) % 8 != 0}
+    >
+        {padString(property.offset.toString(16).toUpperCase(), 4)}
+    </p>
     <p class="mx-3 text-green-400">
         {padString((address + property.offset).toString(16).toUpperCase(), 12)}
     </p>

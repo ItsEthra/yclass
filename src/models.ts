@@ -19,8 +19,8 @@ export class ProjectData {
         let properties: Property[] = []
         for (let i = 0; i < 10; i++) {
             properties.push({
-                kind: FieldKind.Unk64,
-                offset: i * 8
+                kind: FieldKind.Unk16,
+                offset: i * 2
             })
         }
 
@@ -43,8 +43,11 @@ export class ProjectData {
         return item;
     }
 
-    getClass(uuid: string): Class | undefined {
-        return this.classes.find(c => c.uuid == uuid);
+    getClass(uuid: string): Class {
+        const item = this.classes.find(c => c.uuid == uuid);
+        if (!item) throw 'unreachable';
+
+        return item;
     }
 }
 
