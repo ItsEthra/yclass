@@ -27,6 +27,7 @@ export class ProjectData {
         this.classes = [{
             name: 'NewClass',
             uuid: crypto.randomUUID(),
+            address: 0,
             properties
         }]
     }
@@ -36,6 +37,7 @@ export class ProjectData {
         const item: Class = {
             properties: [],
             uuid, name,
+            address: 0
         };
         this.classes.push(item)
         return item;
@@ -49,6 +51,7 @@ export class ProjectData {
 export interface Class {
     name: string
     uuid: string
+    address: number
     properties: Property[]
 }
 

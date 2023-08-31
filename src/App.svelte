@@ -29,4 +29,7 @@
 </div>
 
 <style>
+    div {
+        font-family: "Roboto Mono", monospace;
+    }
 </style>

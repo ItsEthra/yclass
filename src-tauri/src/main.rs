@@ -32,7 +32,7 @@ async fn detach(state: State<Globals, '_>) -> Result<()> {
 async fn eval_address(expr: String, state: State<Globals, '_>) -> Result<usize> {
     let lock = state.process.lock().await;
     let proc = &**lock.as_ref().ok_or(Error::NotAttached)?;
-    dbg!(yclass_core::eval(&expr, proc))
+    yclass_core::eval(&expr, proc)
 }
 
 #[tauri::command]
