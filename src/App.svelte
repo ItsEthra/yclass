@@ -4,6 +4,7 @@
     import Toolbar from "./lib/Toolbar.svelte";
     import { Toaster } from "svelte-french-toast";
     import ClassInspector from "./lib/ClassInspector.svelte";
+    import { project_data } from "./models";
 
     let selectedClassUuid: string | null = null;
 </script>
@@ -20,7 +21,9 @@
     <div class="flex w-full h-full">
         <ProjectData bind:selectedClassUuid />
         {#if selectedClassUuid}
-            <ClassInspector />
+            <ClassInspector
+                currentClass={$project_data.getClass(selectedClassUuid)}
+            />
         {/if}
     </div>
 </div>

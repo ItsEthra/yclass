@@ -52,9 +52,12 @@
             bind:value={newClassName}
             on:keydown={handleNewClassKeydown}
             placeholder="New class"
-            class="input input-bordered w-60"
+            class="input input-bordered input-sm w-60"
         />
-        <button class="btn btn-primary btn-square" on:click={createNewClass}>
+        <button
+            class="btn btn-primary btn-sm btn-square"
+            on:click={createNewClass}
+        >
             <Fa icon={faPlus} size="lg" />
         </button>
     </div>
@@ -66,28 +69,29 @@
                 <!-- svelte-ignore a11y-autofocus -->
                 <input
                     type="text"
-                    class="input"
+                    class="input input-sm"
                     bind:value={item.name}
                     on:keydown={handleEditNameKeydown}
+                    on:focusout={() => (editingClassNameUuid = null)}
                     autofocus
                 />
             {:else}
                 <div class="flex w-full gap-2 group">
                     <button
                         on:click={() => toggleClassSelection(item.uuid)}
-                        class="h-12 rounded-xl text-left pl-4 select-none flex-auto transition-all"
+                        class="h-8 rounded-xl text-left pl-4 select-none flex-auto transition-all"
                         class:btn-primary={selectedClassUuid == item.uuid}
                         >{item.name}</button
                     >
                     <button
                         on:click={() => (editingClassNameUuid = item.uuid)}
-                        class="btn btn-accent hidden group-hover:flex btn-square"
+                        class="btn btn-accent btn-sm hidden group-hover:flex btn-square"
                     >
                         <Fa icon={faPen} />
                     </button>
                     <button
                         on:click={() => removeClass(item.uuid)}
-                        class="btn btn-error hidden group-hover:flex btn-square"
+                        class="btn btn-error btn-sm hidden group-hover:flex btn-square"
                     >
                         <Fa icon={faTrash} />
                     </button>

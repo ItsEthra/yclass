@@ -16,10 +16,18 @@ export class ProjectData {
     classes: Class[] = []
 
     constructor() {
+        let properties: Property[] = []
+        for (let i = 0; i < 10; i++) {
+            properties.push({
+                kind: FieldKind.Unk64,
+                offset: i * 8
+            })
+        }
+
         this.classes = [{
             name: 'NewClass',
             uuid: crypto.randomUUID(),
-            properties: []
+            properties
         }]
     }
 
@@ -45,12 +53,12 @@ export interface Class {
 }
 
 export interface Property {
-    name: string
+    name?: string
     kind: FieldKind
     offset: number
     data?: any
 }
 
-export let value = 15;
 export let project_data: Writable<ProjectData> = writable(new ProjectData());
+export let attached: Writable<boolean> = writable(false);
 

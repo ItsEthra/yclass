@@ -9,6 +9,7 @@ extern "C" {
 
 #[repr(C)]
 struct Foo {
+    magic: usize,
     values: [u16; 10],
     p1: Box<[u32; 10]>,
     p2: Box<[f32; 10]>,
@@ -22,6 +23,7 @@ fn main() {
     println!("Process ID: {}", unsafe { getpid() });
 
     let foo = Foo {
+        magic: 1337,
         values: repeat_with(|| fastrand::u16(..255))
             .take(10)
             .collect::<Vec<_>>()

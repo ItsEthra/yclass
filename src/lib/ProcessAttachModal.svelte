@@ -3,7 +3,7 @@
     import { invoke } from "@tauri-apps/api";
     import { appWindow } from "@tauri-apps/api/window";
     import Fa from "svelte-fa";
-    import { type ProcessEntry } from "../models";
+    import { type ProcessEntry, attached } from "../models";
     import toast from "svelte-french-toast";
 
     let dialog: HTMLDialogElement | null = null;
@@ -34,9 +34,10 @@
 
     const attach = (entry: ProcessEntry) => {
         invoke("attach", { pid: entry.id })
-            .then(() =>
-                toast.success(`Attached to the ${entry.name} - ${entry.id}`)
-            )
+            .then(() => {
+                toast.success(`Attached to the ${entry.name} - ${entry.id}`);
+                attached.set(true);
+            })
             .catch((err) => toast.error(err));
     };
 </script>

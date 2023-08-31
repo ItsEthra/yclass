@@ -35,6 +35,20 @@ async fn eval_address(expr: String, state: State<Globals, '_>) -> Result<usize> 
     dbg!(yclass_core::eval(&expr, proc))
 }
 
+#[tauri::command]
+async fn read(address: usize, count: usize, state: State<Globals, '_>) -> Result<Vec<u8>> {
+    let mut buf = vec![0; count];
+    state
+        .process
+        .lock()
+        .await
+        .as_ref()
+        .ok_or(Error::NotAttached)?
+        .read_buf(address, &mut buf)
+        .map_err(|e| Error::Custom(e))?;
+    Ok(buf)
+}
+
 fn create_menu() -> Menu {
     let mut process_attach_recent =
         CustomMenuItem::new("process_attach_recent", "Attach to recent");
@@ -62,7 +76,8 @@ fn main() {
             list_processes,
             attach,
             detach,
-            eval_address
+            eval_address,
+            read
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

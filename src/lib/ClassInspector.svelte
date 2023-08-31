@@ -1,8 +1,9 @@
 <script lang="ts">
-    import { faChevronRight } from "@fortawesome/free-solid-svg-icons";
     import { invoke } from "@tauri-apps/api";
-    import Fa from "svelte-fa";
     import toast from "svelte-french-toast";
+    import { type Class, attached } from "../models";
+
+    export let currentClass: Class;
 
     function onAddressKeyPress(e: KeyboardEvent) {
         if (e.code == "Enter") {
@@ -19,14 +20,18 @@
 </script>
 
 <div class="p-4 w-full">
-    <div class="flex items-center gap-4 w-full">
-        <Fa size="lg" icon={faChevronRight} />
-        <input
-            on:keypress={onAddressKeyPress}
-            class="input input-primary"
-            placeholder="Address"
-            type="text"
-        />
-    </div>
+    {#if !$attached}
+        <div class="flex justify-center items-center w-full h-full">
+            <h1 class="text-3xl text-warning">Attach to the process first</h1>
+        </div>
+    {:else}
+        <div class="flex items-center gap-4 w-full">
+            <input
+                on:keypress={onAddressKeyPress}
+                class="input input-primary input-sm"
+                placeholder="Address"
+                type="text"
+            />
+        </div>
+    {/if}
 </div>
-
