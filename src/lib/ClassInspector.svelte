@@ -6,14 +6,31 @@
 
     export let currentClass: Class;
 
-    function onAddressKeyPress(e: KeyboardEvent) {
-        if (e.code == "Enter") {
-            const input = e.target as HTMLInputElement;
-            invoke<number>("eval_address", { expr: input.value })
-                .then((output: number) => (currentClass.address = output))
-                .catch((err) => toast.error(err))
-                .finally(() => input.blur());
+    function tryParseAddress(input: HTMLInputElement) {
+        if (input.value.length == 0) {
+            input.value = currentClass.address.toString(16).toUpperCase();
+            return;
         }
+
+        invoke<number>("eval_address", { expr: input.value })
+            .then((output: number) => {
+                currentClass.address = output;
+                input.value = output.toString(16).toUpperCase();
+            })
+            .catch((err) => {
+                input.value = currentClass.address.toString(16).toUpperCase();
+                toast.error(err);
+            })
+            .finally(() => input.blur());
+    }
+
+    function onAddressKeyPress(e: KeyboardEvent) {
+        if (e.code == "Enter") tryParseAddress(e.target as HTMLInputElement);
+    }
+
+    function onAddressUnfocus(e: FocusEvent) {
+        let input = e.target as HTMLInputElement;
+        input.value = currentClass.address.toString(16).toUpperCase();
     }
 </script>
 
@@ -26,11 +43,12 @@
         <div class="flex items-center gap-4 w-full">
             <input
                 on:keypress={onAddressKeyPress}
+                on:focusout={onAddressUnfocus}
                 class="input input-primary input-sm"
                 placeholder="Address"
-                value={currentClass.address.toString(16).toUpperCase()}
                 type="text"
             />
+            <p class="text-xl">- {currentClass.name}</p>
         </div>
         <div class="flex flex-col pt-4 overflow-scroll">
             {#each currentClass.properties as prop}
