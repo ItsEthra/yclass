@@ -44,7 +44,7 @@
     }
 </script>
 
-<div class="h-full border-r border-neutral-700 w-min flex flex-col p-4">
+<div class="border-r border-neutral-700 w-min flex flex-col p-4">
     <h1 class="text-center text-2xl mb-4">Class list</h1>
     <div class="flex items-center gap-4">
         <input
@@ -63,7 +63,7 @@
     </div>
     <div class="divider" />
 
-    <div class="w-full h-full flex flex-col gap-2">
+    <div class="w-full flex flex-col gap-2">
         {#each $project_data.classes as item}
             {#if item.uuid == editingClassNameUuid}
                 <!-- svelte-ignore a11y-autofocus -->

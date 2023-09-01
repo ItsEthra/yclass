@@ -17,7 +17,7 @@ export class ProjectData {
 
     constructor() {
         let properties: Property[] = []
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 100; i++) {
             properties.push({
                 kind: FieldKind.Unk64,
                 offset: i * 8

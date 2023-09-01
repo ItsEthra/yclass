@@ -34,7 +34,7 @@
     }
 </script>
 
-<div class="p-4 w-full h-full">
+<div class="p-4 w-full">
     {#if !$attached}
         <div class="flex justify-center items-center w-full h-full">
             <h1 class="text-3xl text-warning">Attach to the process first</h1>
@@ -50,7 +50,7 @@
             />
             <p class="text-xl">- {currentClass.name}</p>
         </div>
-        <div class="flex flex-col pt-4 overflow-scroll">
+        <div class="flex flex-col mt-4 h-[84vh] overflow-scroll">
             {#each currentClass.properties as prop}
                 <UnknownField
                     property={prop}

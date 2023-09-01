@@ -18,7 +18,7 @@
 
 <div class="flex flex-col h-screen w-screen">
     <Toolbar />
-    <div class="flex w-full h-full">
+    <div class="flex w-full flex-auto">
         <ProjectData bind:selectedClassUuid />
         {#if selectedClassUuid}
             <ClassInspector
